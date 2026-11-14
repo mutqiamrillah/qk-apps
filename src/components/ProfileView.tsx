@@ -49,14 +49,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setAuthSuccess("");
     setAuthLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     try {
       if (isSupabaseConfigured && supabase) {
         if (authMode === "signup") {
           const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
+            email: cleanEmail,
+            password: cleanPassword,
             options: {
-              data: { name: fullName || "QK" },
+              data: { name: fullName.trim() || "QK" },
             },
           });
           if (error) throw error;
@@ -65,8 +68,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             // Jika konfirmasi email di-disable di Supabase, user langsung login
             const newUser: UserProfile = {
               id: data.user.id,
-              email: data.user.email || email,
-              name: fullName || data.user.user_metadata?.name || "QK",
+              email: data.user.email || cleanEmail,
+              name: fullName.trim() || data.user.user_metadata?.name || "QK",
               streak_days: 0,
               notes_count: notes.length,
               last_note_date: "",
@@ -84,8 +87,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         } else {
           // Login
           const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+            email: cleanEmail,
+            password: cleanPassword,
           });
           if (error) throw error;
 
@@ -99,7 +102,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
             const authedUser: UserProfile = {
               id: data.user.id,
-              email: data.user.email || email,
+              email: data.user.email || cleanEmail,
               name: dbProfile?.name || data.user.user_metadata?.name || "QK",
               streak_days: dbProfile?.streak_days ?? 0,
               notes_count: dbProfile?.notes_count ?? notes.length,
@@ -114,8 +117,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         // Local Mode Simulation
         const localUser: UserProfile = {
           id: `user-${Date.now()}`,
-          email: email || "user@qk-notes.local",
-          name: fullName || (email ? email.split("@")[0] : "QK"),
+          email: cleanEmail || "user@qk-notes.local",
+          name: fullName.trim() || (cleanEmail ? cleanEmail.split("@")[0] : "QK"),
           streak_days: 0,
           notes_count: notes.length,
           last_note_date: "",

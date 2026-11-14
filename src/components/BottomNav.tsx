@@ -7,6 +7,7 @@ export type NavTab = "home" | "study" | "search" | "profile";
 
 interface BottomNavProps {
   activeTab: NavTab;
+  isLoggedIn?: boolean;
   onTabChange: (tab: NavTab) => void;
   onNewNoteClick: () => void;
   showFab?: boolean;
@@ -14,14 +15,21 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   activeTab,
+  isLoggedIn = false,
   onTabChange,
   onNewNoteClick,
   showFab = true,
 }) => {
+  // Tombol + TIDAK BOLEH tampil jika:
+  // 1. User belum login (!isLoggedIn)
+  // 2. Sedang berada di tab profile (activeTab === "profile")
+  // 3. showFab bernilai false
+  const canShowFab = Boolean(showFab && isLoggedIn && activeTab !== "profile");
+
   return (
     <>
       {/* Floating Action Button (+) */}
-      {showFab && (
+      {canShowFab && (
         <button
           onClick={onNewNoteClick}
           className="fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full bg-[#134e43] text-white flex items-center justify-center text-3xl shadow-xl shadow-emerald-950/20 hover:scale-105 active:scale-95 transition-all"
@@ -90,4 +98,3 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     </>
   );
 };
-

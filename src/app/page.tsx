@@ -60,6 +60,9 @@ export default function HomePage() {
                 const refreshedNotes = await storageService.getNotes();
                 setUser(refreshedUser);
                 setNotes(refreshedNotes);
+              } else {
+                setUser(initialUser);
+                setNotes([]);
               }
             }
           );
@@ -93,13 +96,14 @@ export default function HomePage() {
   const handleSaveNote = async (savedNote: NoteItem) => {
     const isNewNote = !notes.some((n) => n.id === savedNote.id);
     const updated = await storageService.saveNote(savedNote);
+
+    // Langsung update active note agar tampilan NoteReader langsung ter-refresh seketika
+    if (activeNote && activeNote.id === updated.id) {
+      setActiveNote({ ...updated });
+    }
+
     const updatedNotes = await storageService.getNotes();
     setNotes(updatedNotes);
-
-    // Update active note if currently open
-    if (activeNote && activeNote.id === updated.id) {
-      setActiveNote(updated);
-    }
 
     // Kalkulasi streak: hanya bertambah jika user membuat catatan baru setiap hari
     let updatedUser = { ...user };
@@ -159,102 +163,104 @@ export default function HomePage() {
     setActiveTab("home");
   };
 
-  // If reading a note, display the NoteReader view
-  if (activeNote) {
-    return (
-      <NoteReader
-        note={activeNote}
-        onBack={() => setActiveNote(null)}
-        onDelete={handleDeleteNote}
-        onEdit={handleEditNote}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white flex flex-col relative select-none">
-      {/* Top Header: Hanya menyisakan icon logout sesuai instruksi */}
-      <Header
-        user={user}
-        onLogout={handleLogout}
-        onLoginClick={() => setActiveTab("profile")}
-      />
-
-      {/* Main Content by Tab */}
-      <main className="flex-1">
-        {activeTab === "home" && (
-          <>
-            <StudyStreakCard
-              days={user.streak_days}
-              totalNotes={notes.length}
-            />
-            <RecentNotes
-              notes={notes}
-              isLoggedIn={user.is_logged_in}
-              onSelectNote={handleSelectNote}
-              onSeeAllClick={() => setActiveTab("study")}
-              onLoginClick={() => setActiveTab("profile")}
-            />
-          </>
-        )}
-
-        {activeTab === "study" && (
-          <CategoryGrid
-            categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            onSelectCategory={setSelectedCategoryId}
-            onAddCategory={handleAddCategory}
-            notes={notes}
-            onSelectNote={handleSelectNote}
-          />
-        )}
-
-        {activeTab === "search" && (
-          <div className="p-5">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Search</h1>
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 text-sm text-left flex items-center justify-between"
-            >
-              <span>Ketik kata kunci atau tag...</span>
-              <span>🔍</span>
-            </button>
-            <div className="mt-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                Semua Catatan ({notes.length})
-              </h3>
-              <RecentNotes
-                notes={notes}
-                isLoggedIn={user.is_logged_in}
-                onSelectNote={handleSelectNote}
-                onLoginClick={() => setActiveTab("profile")}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === "profile" && (
-          <ProfileView
+      {activeNote ? (
+        /* --- VIEW READER JIKA SEDANG BUKA CATATAN --- */
+        <NoteReader
+          note={activeNote}
+          onBack={() => setActiveNote(null)}
+          onDelete={handleDeleteNote}
+          onEdit={handleEditNote}
+        />
+      ) : (
+        /* --- MAIN APP TABS VIEW --- */
+        <>
+          {/* Top Header: Hanya menyisakan icon logout sesuai instruksi */}
+          <Header
             user={user}
-            notes={notes}
-            onUserChange={handleUpdateUser}
             onLogout={handleLogout}
+            onLoginClick={() => setActiveTab("profile")}
           />
-        )}
-      </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          if (tab === "search") setIsSearchOpen(true);
-        }}
-        onNewNoteClick={handleCreateNewNote}
-        showFab={!activeNote}
-      />
+          {/* Main Content by Tab */}
+          <main className="flex-1">
+            {activeTab === "home" && (
+              <>
+                <StudyStreakCard
+                  days={user.streak_days}
+                  totalNotes={notes.length}
+                />
+                <RecentNotes
+                  notes={notes}
+                  isLoggedIn={user.is_logged_in}
+                  onSelectNote={handleSelectNote}
+                  onSeeAllClick={() => setActiveTab("study")}
+                  onLoginClick={() => setActiveTab("profile")}
+                />
+              </>
+            )}
 
-      {/* Modals */}
+            {activeTab === "study" && (
+              <CategoryGrid
+                categories={categories}
+                selectedCategoryId={selectedCategoryId}
+                onSelectCategory={setSelectedCategoryId}
+                onAddCategory={handleAddCategory}
+                notes={notes}
+                onSelectNote={handleSelectNote}
+              />
+            )}
+
+            {activeTab === "search" && (
+              <div className="p-5">
+                <h1 className="text-2xl font-bold text-slate-900 mb-4">Search</h1>
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 text-sm text-left flex items-center justify-between"
+                >
+                  <span>Ketik kata kunci atau tag...</span>
+                  <span>🔍</span>
+                </button>
+                <div className="mt-6">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Semua Catatan ({notes.length})
+                  </h3>
+                  <RecentNotes
+                    notes={notes}
+                    isLoggedIn={user.is_logged_in}
+                    onSelectNote={handleSelectNote}
+                    onLoginClick={() => setActiveTab("profile")}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "profile" && (
+              <ProfileView
+                user={user}
+                notes={notes}
+                onUserChange={handleUpdateUser}
+                onLogout={handleLogout}
+              />
+            )}
+          </main>
+
+          {/* Bottom Navigation */}
+          <BottomNav
+            activeTab={activeTab}
+            isLoggedIn={user.is_logged_in}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              if (tab === "search") setIsSearchOpen(true);
+            }}
+            onNewNoteClick={handleCreateNewNote}
+            showFab={user.is_logged_in && activeTab !== "profile"}
+          />
+        </>
+      )}
+
+      {/* Modals SELALU RENDER di level root agar Edit Note langsung terbuka dan bekerja */}
       <NoteEditorModal
         isOpen={isEditorOpen}
         noteToEdit={noteToEdit}

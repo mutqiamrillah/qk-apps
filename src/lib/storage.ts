@@ -99,6 +99,9 @@ export const storageService = {
             await storageService.saveUser(newProfile);
             return newProfile;
           }
+        } else {
+          // User belum login di Supabase
+          return initialUser;
         }
       } catch (err) {
         console.warn("Supabase user fetch fallback to local:", err);
