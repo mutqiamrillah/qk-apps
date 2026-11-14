@@ -31,7 +31,7 @@ export default function HomePage() {
   // Category filter state in Study tab
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
 
-  // Load initial data from storage on mount
+  // Load initial data from storage & sync on auth state change
   useEffect(() => {
     async function loadData() {
       try {
@@ -48,6 +48,27 @@ export default function HomePage() {
       }
     }
     loadData();
+
+    // Listen to real-time auth changes from Supabase
+    if (typeof window !== "undefined") {
+      import("@/lib/supabase").then(({ supabase, isSupabaseConfigured }) => {
+        if (isSupabaseConfigured && supabase) {
+          const { data: authListener } = supabase.auth.onAuthStateChange(
+            async (_event, session) => {
+              if (session?.user) {
+                const refreshedUser = await storageService.getUser();
+                const refreshedNotes = await storageService.getNotes();
+                setUser(refreshedUser);
+                setNotes(refreshedNotes);
+              }
+            }
+          );
+          return () => {
+            authListener.subscription.unsubscribe();
+          };
+        }
+      });
+    }
   }, []);
 
   // Handlers

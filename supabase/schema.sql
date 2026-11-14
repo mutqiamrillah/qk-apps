@@ -14,10 +14,15 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Pastikan kolom last_note_date ditambahkan jika tabel profiles sudah ada sebelumnya:
+-- Pastikan kolom last_note_date ditambahkan jika tabel profiles sudah ada:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_note_date TEXT DEFAULT NULL;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Drop policy lama agar bersih
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 
 CREATE POLICY "Users can view own profile" 
 ON public.profiles FOR SELECT 
@@ -25,7 +30,8 @@ USING (auth.uid() = id);
 
 CREATE POLICY "Users can update own profile" 
 ON public.profiles FOR UPDATE 
-USING (auth.uid() = id);
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can insert own profile" 
 ON public.profiles FOR INSERT 
@@ -50,23 +56,30 @@ CREATE TABLE IF NOT EXISTS public.notes (
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
+-- Drop policy lama notes
+DROP POLICY IF EXISTS "Users can view own notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can insert own notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can update own notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can delete own notes" ON public.notes;
+
 CREATE POLICY "Users can view own notes" 
 ON public.notes FOR SELECT 
-USING (auth.uid() = user_id OR user_id IS NULL);
+USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own notes" 
 ON public.notes FOR INSERT 
-WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own notes" 
 ON public.notes FOR UPDATE 
-USING (auth.uid() = user_id OR user_id IS NULL);
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own notes" 
 ON public.notes FOR DELETE 
-USING (auth.uid() = user_id OR user_id IS NULL);
+USING (auth.uid() = user_id);
 
--- 3. Automatic Profile Creation on Signup Trigger
+-- 3. Automatic Profile Creation on Signup Trigger (SECURITY DEFINER bypasses client RLS)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -78,7 +91,10 @@ BEGIN
     0,
     0,
     NULL
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -87,4 +103,3 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-

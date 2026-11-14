@@ -188,32 +188,36 @@ export const storageService = {
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: authData } = await supabase.auth.getUser();
-        if (!authData?.user) {
-          return [];
-        }
+        if (authData?.user) {
+          const { data, error } = await supabase
+            .from("notes")
+            .select("*")
+            .eq("user_id", authData.user.id)
+            .order("created_at", { ascending: false });
 
-        const { data, error } = await supabase
-          .from("notes")
-          .select("*")
-          .eq("user_id", authData.user.id)
-          .order("created_at", { ascending: false });
+          if (!error && data) {
+            const mapped: NoteItem[] = data.map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              category: d.category || "Lectures",
+              speaker: d.speaker || "",
+              source: d.source || "",
+              episode_no: d.episode_no || "",
+              tags: Array.isArray(d.tags) ? d.tags : [],
+              status: d.status || "Online",
+              date: d.date || new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+              content: d.content || "",
+              user_id: d.user_id,
+              created_at: d.created_at,
+              updated_at: d.updated_at,
+            }));
 
-        if (!error && data) {
-          return data.map((d: any) => ({
-            id: d.id,
-            title: d.title,
-            category: d.category || "Lectures",
-            speaker: d.speaker || "",
-            source: d.source || "",
-            episode_no: d.episode_no || "",
-            tags: Array.isArray(d.tags) ? d.tags : [],
-            status: d.status || "Online",
-            date: d.date || new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-            content: d.content || "",
-            user_id: d.user_id,
-            created_at: d.created_at,
-            updated_at: d.updated_at,
-          }));
+            const userNotesKey = `${STORAGE_KEYS.NOTES}_${authData.user.id}`;
+            localStorage.setItem(userNotesKey, JSON.stringify(mapped));
+            return mapped;
+          } else if (error) {
+            console.error("Supabase getNotes error:", error);
+          }
         }
       } catch (err) {
         console.warn("Supabase fetch notes failed, using local storage:", err);
@@ -249,31 +253,38 @@ export const storageService = {
       updatedNotes = [cleanNote, ...notes];
     }
 
-    if (typeof window !== "undefined" && currentUser.is_logged_in) {
-      const userNotesKey = `${STORAGE_KEYS.NOTES}_${currentUser.id}`;
-      localStorage.setItem(userNotesKey, JSON.stringify(updatedNotes));
-    }
-
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: authData } = await supabase.auth.getUser();
-        await supabase.from("notes").upsert({
-          id: cleanNote.id,
-          user_id: authData?.user?.id || null,
-          title: cleanNote.title,
-          category: cleanNote.category,
-          speaker: cleanNote.speaker,
-          source: cleanNote.source,
-          episode_no: cleanNote.episode_no,
-          tags: cleanNote.tags,
-          status: cleanNote.status,
-          date: cleanNote.date,
-          content: cleanNote.content,
-          updated_at: now,
-        });
+        if (authData?.user) {
+          cleanNote.user_id = authData.user.id;
+          const { error: upsertErr } = await supabase.from("notes").upsert({
+            id: cleanNote.id,
+            user_id: authData.user.id,
+            title: cleanNote.title,
+            category: cleanNote.category,
+            speaker: cleanNote.speaker,
+            source: cleanNote.source,
+            episode_no: cleanNote.episode_no,
+            tags: cleanNote.tags,
+            status: cleanNote.status,
+            date: cleanNote.date,
+            content: cleanNote.content,
+            updated_at: now,
+          });
+          if (upsertErr) {
+            console.error("Supabase save note error:", upsertErr);
+          }
+        }
       } catch (err) {
         console.warn("Supabase save note failed:", err);
       }
+    }
+
+    if (typeof window !== "undefined") {
+      const activeUserId = cleanNote.user_id || currentUser.id;
+      const userNotesKey = `${STORAGE_KEYS.NOTES}_${activeUserId}`;
+      localStorage.setItem(userNotesKey, JSON.stringify(updatedNotes));
     }
 
     return cleanNote;

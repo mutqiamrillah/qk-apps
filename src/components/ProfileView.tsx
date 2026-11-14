@@ -61,34 +61,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           });
           if (error) throw error;
 
-          if (data.user) {
-            // Upsert directly into database profiles table
-            const profilePayload: Record<string, any> = {
-              id: data.user.id,
-              name: fullName || "QK",
-              email: data.user.email,
-              streak_days: 0,
-              notes_count: notes.length,
-              last_note_date: null,
-              updated_at: new Date().toISOString(),
-            };
-            const { error: profileErr } = await supabase.from("profiles").upsert(profilePayload);
-            if (profileErr && (profileErr.message?.includes("last_note_date") || profileErr.code === "PGRST204")) {
-              delete profilePayload.last_note_date;
-              await supabase.from("profiles").upsert(profilePayload);
-            }
-
+          if (data.session && data.user) {
+            // Jika konfirmasi email di-disable di Supabase, user langsung login
             const newUser: UserProfile = {
               id: data.user.id,
               email: data.user.email || email,
-              name: fullName || "QK",
+              name: fullName || data.user.user_metadata?.name || "QK",
               streak_days: 0,
               notes_count: notes.length,
               last_note_date: "",
               is_logged_in: true,
             };
             onUserChange(newUser);
-            setAuthSuccess("Pendaftaran berhasil! Akun Anda telah disimpan di database.");
+            setAuthSuccess("Pendaftaran berhasil dan Anda sudah masuk!");
+          } else if (data.user) {
+            // Jika konfirmasi email aktif di Supabase
+            setAuthSuccess(
+              "Pendaftaran berhasil! Akun telah dibuat. Silakan periksa inbox email Anda untuk konfirmasi, lalu masuk via tab Login."
+            );
+            setAuthMode("login");
           }
         } else {
           // Login
