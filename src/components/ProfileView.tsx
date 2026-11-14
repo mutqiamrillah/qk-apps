@@ -63,7 +63,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           if (data.user) {
             // Upsert directly into database profiles table
-            await supabase.from("profiles").upsert({
+            const profilePayload: Record<string, any> = {
               id: data.user.id,
               name: fullName || "QK",
               email: data.user.email,
@@ -71,7 +71,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               notes_count: notes.length,
               last_note_date: null,
               updated_at: new Date().toISOString(),
-            });
+            };
+            const { error: profileErr } = await supabase.from("profiles").upsert(profilePayload);
+            if (profileErr && (profileErr.message?.includes("last_note_date") || profileErr.code === "PGRST204")) {
+              delete profilePayload.last_note_date;
+              await supabase.from("profiles").upsert(profilePayload);
+            }
 
             const newUser: UserProfile = {
               id: data.user.id,

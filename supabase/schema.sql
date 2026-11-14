@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Pastikan kolom last_note_date ditambahkan jika tabel profiles sudah ada sebelumnya:
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_note_date TEXT DEFAULT NULL;
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own profile" 

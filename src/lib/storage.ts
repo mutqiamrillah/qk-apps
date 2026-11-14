@@ -120,15 +120,22 @@ export const storageService = {
 
     if (isSupabaseConfigured && supabase && user.is_logged_in) {
       try {
-        await supabase.from("profiles").upsert({
+        const payload: Record<string, any> = {
           id: user.id,
           name: user.name,
           email: user.email,
           streak_days: user.streak_days,
           notes_count: user.notes_count,
-          last_note_date: user.last_note_date,
+          last_note_date: user.last_note_date || null,
           updated_at: new Date().toISOString(),
-        });
+        };
+
+        const { error } = await supabase.from("profiles").upsert(payload);
+        if (error && (error.message?.includes("last_note_date") || error.code === "PGRST204")) {
+          // Fallback jika kolom last_note_date belum dieksekusi di Supabase
+          delete payload.last_note_date;
+          await supabase.from("profiles").upsert(payload);
+        }
       } catch (err) {
         console.warn("Supabase save user failed, storing locally:", err);
       }
