@@ -8,8 +8,55 @@ const STORAGE_KEYS = {
   CATEGORIES: "qk_categories_list",
 };
 
+// --- STREAK CALCULATION LOGIC ---
+export function calculateStreakOnNewNote(
+  currentStreak: number,
+  lastNoteDate?: string
+): { newStreak: number; newDate: string } {
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+  if (!lastNoteDate) {
+    // First ever note created -> streak starts at 1
+    return { newStreak: 1, newDate: today };
+  }
+
+  if (lastNoteDate === today) {
+    // Note created today already -> maintain current streak (don't increment twice in same day)
+    return { newStreak: Math.max(1, currentStreak), newDate: today };
+  }
+
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = yesterdayDate.toISOString().split("T")[0];
+
+  if (lastNoteDate === yesterday) {
+    // Consecutive day -> increment streak!
+    return { newStreak: (currentStreak || 0) + 1, newDate: today };
+  }
+
+  // Missed one or more days -> streak resets to 1
+  return { newStreak: 1, newDate: today };
+}
+
+export function getEffectiveStreak(
+  currentStreak: number,
+  lastNoteDate?: string
+): number {
+  if (!lastNoteDate || currentStreak <= 0) return 0;
+  const today = new Date().toISOString().split("T")[0];
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = yesterdayDate.toISOString().split("T")[0];
+
+  if (lastNoteDate === today || lastNoteDate === yesterday) {
+    return currentStreak;
+  }
+  // Streak broken
+  return 0;
+}
+
 export const storageService = {
-  // --- USER PROFILE ---
+  // --- USER PROFILE & AUTH ---
   getUser: async (): Promise<UserProfile> => {
     if (typeof window === "undefined") return initialUser;
 
@@ -21,16 +68,36 @@ export const storageService = {
             .from("profiles")
             .select("*")
             .eq("id", authData.user.id)
-            .single();
+            .maybeSingle();
 
           if (profile) {
+            const effectiveStreak = getEffectiveStreak(
+              profile.streak_days ?? 0,
+              profile.last_note_date
+            );
+
             return {
               id: profile.id,
               email: profile.email || authData.user.email || "",
-              name: profile.name || "QK",
-              streak_days: profile.streak_days ?? 3,
-              notes_count: profile.notes_count ?? 12,
+              name: profile.name || authData.user.user_metadata?.name || "QK",
+              streak_days: effectiveStreak,
+              notes_count: profile.notes_count ?? 0,
+              last_note_date: profile.last_note_date || "",
+              is_logged_in: true,
             };
+          } else {
+            // Profile row not found yet -> create it
+            const newProfile: UserProfile = {
+              id: authData.user.id,
+              email: authData.user.email || "",
+              name: authData.user.user_metadata?.name || "QK",
+              streak_days: 0,
+              notes_count: 0,
+              last_note_date: "",
+              is_logged_in: true,
+            };
+            await storageService.saveUser(newProfile);
+            return newProfile;
           }
         }
       } catch (err) {
@@ -43,19 +110,23 @@ export const storageService = {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(initialUser));
       return initialUser;
     }
-    return JSON.parse(local);
+    const parsed = JSON.parse(local);
+    parsed.streak_days = getEffectiveStreak(parsed.streak_days, parsed.last_note_date);
+    return parsed;
   },
 
   saveUser: async (user: UserProfile): Promise<void> => {
     if (typeof window === "undefined") return;
 
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseConfigured && supabase && user.is_logged_in) {
       try {
         await supabase.from("profiles").upsert({
           id: user.id,
           name: user.name,
+          email: user.email,
           streak_days: user.streak_days,
           notes_count: user.notes_count,
+          last_note_date: user.last_note_date,
           updated_at: new Date().toISOString(),
         });
       } catch (err) {
@@ -64,6 +135,17 @@ export const storageService = {
     }
 
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  },
+
+  logoutUser: async (): Promise<void> => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn("Supabase signout failed:", err);
+      }
+    }
+    localStorage.removeItem(STORAGE_KEYS.USER);
   },
 
   // --- CATEGORIES ---
@@ -88,16 +170,28 @@ export const storageService = {
 
   // --- NOTES CRUD ---
   getNotes: async (): Promise<NoteItem[]> => {
-    if (typeof window === "undefined") return initialNotes;
+    if (typeof window === "undefined") return [];
+
+    const currentUser = await storageService.getUser();
+    // Jika belum login, tidak menampilkan catatan karena catatan bersifat per-user
+    if (!currentUser.is_logged_in) {
+      return [];
+    }
 
     if (isSupabaseConfigured && supabase) {
       try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData?.user) {
+          return [];
+        }
+
         const { data, error } = await supabase
           .from("notes")
           .select("*")
+          .eq("user_id", authData.user.id)
           .order("created_at", { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           return data.map((d: any) => ({
             id: d.id,
             title: d.title,
@@ -119,15 +213,16 @@ export const storageService = {
       }
     }
 
-    const local = localStorage.getItem(STORAGE_KEYS.NOTES);
+    const userNotesKey = `${STORAGE_KEYS.NOTES}_${currentUser.id}`;
+    const local = localStorage.getItem(userNotesKey);
     if (!local) {
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(initialNotes));
-      return initialNotes;
+      return [];
     }
     return JSON.parse(local);
   },
 
   saveNote: async (note: NoteItem): Promise<NoteItem> => {
+    const currentUser = await storageService.getUser();
     const notes = await storageService.getNotes();
     const index = notes.findIndex((n) => n.id === note.id);
     let updatedNotes: NoteItem[];
@@ -135,6 +230,7 @@ export const storageService = {
     const now = new Date().toISOString();
     const cleanNote: NoteItem = {
       ...note,
+      user_id: currentUser.id,
       updated_at: now,
       created_at: note.created_at || now,
     };
@@ -146,8 +242,9 @@ export const storageService = {
       updatedNotes = [cleanNote, ...notes];
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(updatedNotes));
+    if (typeof window !== "undefined" && currentUser.is_logged_in) {
+      const userNotesKey = `${STORAGE_KEYS.NOTES}_${currentUser.id}`;
+      localStorage.setItem(userNotesKey, JSON.stringify(updatedNotes));
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -176,11 +273,13 @@ export const storageService = {
   },
 
   deleteNote: async (id: string): Promise<void> => {
+    const currentUser = await storageService.getUser();
     const notes = await storageService.getNotes();
     const filtered = notes.filter((n) => n.id !== id);
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(filtered));
+    if (typeof window !== "undefined" && currentUser.is_logged_in) {
+      const userNotesKey = `${STORAGE_KEYS.NOTES}_${currentUser.id}`;
+      localStorage.setItem(userNotesKey, JSON.stringify(filtered));
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -192,4 +291,3 @@ export const storageService = {
     }
   },
 };
-

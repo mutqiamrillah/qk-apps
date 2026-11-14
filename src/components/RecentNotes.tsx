@@ -2,24 +2,29 @@
 
 import React from "react";
 import { NoteItem } from "@/lib/types";
+import { LogIn } from "lucide-react";
 
 interface RecentNotesProps {
   notes: NoteItem[];
+  isLoggedIn?: boolean;
   onSelectNote: (note: NoteItem) => void;
   onSeeAllClick?: () => void;
+  onLoginClick?: () => void;
 }
 
 export const RecentNotes: React.FC<RecentNotesProps> = ({
   notes,
+  isLoggedIn = false,
   onSelectNote,
   onSeeAllClick,
+  onLoginClick,
 }) => {
   return (
     <section className="px-5 mt-5 pb-24">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-3.5">
         <h2 className="text-base font-bold text-slate-900">Recent notes</h2>
-        {onSeeAllClick && (
+        {onSeeAllClick && notes.length > 0 && (
           <button
             onClick={onSeeAllClick}
             className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition"
@@ -32,14 +37,36 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
       {/* Note List */}
       <div className="space-y-3">
         {notes.length === 0 ? (
-          <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-            <span className="text-3xl">📖</span>
-            <p className="text-sm text-slate-500 font-medium mt-2">
-              Belum ada catatan tersimpan
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Tekan tombol + di kanan bawah untuk membuat catatan baru.
-            </p>
+          <div className="text-center py-10 px-4 bg-slate-50/80 rounded-3xl border border-dashed border-slate-200">
+            <span className="text-3xl block mb-2">📖</span>
+            {!isLoggedIn ? (
+              <>
+                <p className="text-sm text-slate-700 font-bold">
+                  Belum ada catatan
+                </p>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                  Catatan disimpan berdasarkan akun penulisnya. Silakan masuk atau daftar terlebih dahulu.
+                </p>
+                {onLoginClick && (
+                  <button
+                    onClick={onLoginClick}
+                    className="mt-4 px-4 py-2 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Masuk / Daftar Akun</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-slate-700 font-bold">
+                  Belum ada catatan tersimpan
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Tekan tombol + di kanan bawah untuk membuat rangkuman baru.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           notes.map((note) => {
@@ -87,4 +114,3 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
     </section>
   );
 };
-

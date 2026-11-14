@@ -4,6 +4,8 @@ export interface UserProfile {
   name: string;
   streak_days: number;
   notes_count: number;
+  last_note_date?: string; // YYYY-MM-DD
+  is_logged_in?: boolean;
 }
 
 export interface NoteItem {

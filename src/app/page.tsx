@@ -9,9 +9,8 @@ import { NoteReader } from "@/components/NoteReader";
 import { NoteEditorModal } from "@/components/NoteEditorModal";
 import { BottomNav, NavTab } from "@/components/BottomNav";
 import { SearchModal } from "@/components/SearchModal";
-import { ProfileModal } from "@/components/ProfileModal";
-import { AuthModal } from "@/components/AuthModal";
-import { storageService } from "@/lib/storage";
+import { ProfileView } from "@/components/ProfileView";
+import { storageService, calculateStreakOnNewNote } from "@/lib/storage";
 import { CategoryItem, NoteItem, UserProfile } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
 
@@ -28,8 +27,6 @@ export default function HomePage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<NoteItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   // Category filter state in Study tab
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
@@ -59,6 +56,10 @@ export default function HomePage() {
   };
 
   const handleCreateNewNote = () => {
+    if (!user.is_logged_in) {
+      setActiveTab("profile");
+      return;
+    }
     setNoteToEdit(null);
     setIsEditorOpen(true);
   };
@@ -69,6 +70,7 @@ export default function HomePage() {
   };
 
   const handleSaveNote = async (savedNote: NoteItem) => {
+    const isNewNote = !notes.some((n) => n.id === savedNote.id);
     const updated = await storageService.saveNote(savedNote);
     const updatedNotes = await storageService.getNotes();
     setNotes(updatedNotes);
@@ -78,8 +80,18 @@ export default function HomePage() {
       setActiveNote(updated);
     }
 
-    // Update user's note count
-    const updatedUser = { ...user, notes_count: updatedNotes.length };
+    // Kalkulasi streak: hanya bertambah jika user membuat catatan baru setiap hari
+    let updatedUser = { ...user };
+    if (isNewNote) {
+      const { newStreak, newDate } = calculateStreakOnNewNote(
+        user.streak_days,
+        user.last_note_date
+      );
+      updatedUser.streak_days = newStreak;
+      updatedUser.last_note_date = newDate;
+    }
+    updatedUser.notes_count = updatedNotes.length;
+
     setUser(updatedUser);
     await storageService.saveUser(updatedUser);
   };
@@ -111,6 +123,19 @@ export default function HomePage() {
   const handleUpdateUser = async (updatedUser: UserProfile) => {
     setUser(updatedUser);
     await storageService.saveUser(updatedUser);
+    if (updatedUser.is_logged_in) {
+      const userNotes = await storageService.getNotes();
+      setNotes(userNotes);
+    } else {
+      setNotes([]);
+    }
+  };
+
+  const handleLogout = async () => {
+    await storageService.logoutUser();
+    setUser(initialUser);
+    setNotes([]);
+    setActiveTab("home");
   };
 
   // If reading a note, display the NoteReader view
@@ -127,15 +152,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative select-none">
-      {/* Top Header */}
+      {/* Top Header: Hanya menyisakan icon logout sesuai instruksi */}
       <Header
         user={user}
-        currentCategoryTitle={
-          activeTab === "study" ? "Study Notes" : "Lecture Notes"
-        }
-        onProfileClick={() => setIsProfileOpen(true)}
-        onSearchClick={() => setIsSearchOpen(true)}
-        onDownloadClick={() => setIsProfileOpen(true)}
+        onLogout={handleLogout}
+        onLoginClick={() => setActiveTab("profile")}
       />
 
       {/* Main Content by Tab */}
@@ -148,8 +169,10 @@ export default function HomePage() {
             />
             <RecentNotes
               notes={notes}
+              isLoggedIn={user.is_logged_in}
               onSelectNote={handleSelectNote}
               onSeeAllClick={() => setActiveTab("study")}
+              onLoginClick={() => setActiveTab("profile")}
             />
           </>
         )}
@@ -179,42 +202,23 @@ export default function HomePage() {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
                 Semua Catatan ({notes.length})
               </h3>
-              <RecentNotes notes={notes} onSelectNote={handleSelectNote} />
+              <RecentNotes
+                notes={notes}
+                isLoggedIn={user.is_logged_in}
+                onSelectNote={handleSelectNote}
+                onLoginClick={() => setActiveTab("profile")}
+              />
             </div>
           </div>
         )}
 
         {activeTab === "profile" && (
-          <div className="p-5">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Profile</h1>
-            <div className="bg-slate-50 rounded-3xl p-6 text-center border border-slate-150">
-              <div className="w-20 h-20 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-4xl mx-auto mb-3 shadow-md">
-                🤲
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
-              <p className="text-xs text-slate-500 mb-4">{user.email}</p>
-              <div className="flex justify-center gap-4 text-xs font-semibold text-slate-700">
-                <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
-                  <div className="text-lg font-bold text-emerald-800">
-                    {user.streak_days} Hari
-                  </div>
-                  <div className="text-[10px] text-slate-400">Streak</div>
-                </div>
-                <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
-                  <div className="text-lg font-bold text-emerald-800">
-                    {notes.length}
-                  </div>
-                  <div className="text-[10px] text-slate-400">Total Notes</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsProfileOpen(true)}
-                className="mt-6 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition"
-              >
-                Pengaturan Akun & Backup
-              </button>
-            </div>
-          </div>
+          <ProfileView
+            user={user}
+            notes={notes}
+            onUserChange={handleUpdateUser}
+            onLogout={handleLogout}
+          />
         )}
       </main>
 
@@ -244,24 +248,6 @@ export default function HomePage() {
         onClose={() => setIsSearchOpen(false)}
         onSelectNote={handleSelectNote}
       />
-
-      <ProfileModal
-        isOpen={isProfileOpen}
-        user={user}
-        notes={notes}
-        onClose={() => setIsProfileOpen(false)}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onUpdateUser={handleUpdateUser}
-      />
-
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={(authedUser) => {
-          handleUpdateUser(authedUser);
-        }}
-      />
     </div>
   );
 }
-
