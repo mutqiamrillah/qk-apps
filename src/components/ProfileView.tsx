@@ -37,10 +37,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
 
-  // Edit Name state
+  // Edit Name & Avatar state
   const [editName, setEditName] = useState(user.name);
   const [nameSaveSuccess, setNameSaveSuccess] = useState(false);
   const [nameSaving, setNameSaving] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const AVAILABLE_EMOJIS = [
+    "🤲", "👳‍♂️", "🧕", "📖", "🌙", "🕌", "🌿", "⭐", 
+    "🕊️", "☕", "🎓", "✍️", "💡", "🌸", "🛡️", "📜",
+    "🕋", "✨", "🌻", "🌴", "🦁", "💎", "🎯", "🍵"
+  ];
+
+  const handleSelectAvatar = async (emoji: string) => {
+    const updated = { ...user, avatar: emoji };
+    onUserChange(updated);
+    setShowEmojiPicker(false);
+  };
 
   // --- HANDLE AUTH (SIGNUP / LOGIN) ---
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -324,9 +337,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="space-y-4">
           {/* User Card */}
           <div className="bg-slate-50 rounded-3xl p-6 text-center border border-slate-150">
-            <div className="w-20 h-20 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-4xl mx-auto mb-3 shadow-md">
-              🤲
+            {/* Interactive Emoji Avatar */}
+            <div className="relative inline-block mx-auto mb-3">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="w-20 h-20 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-4xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer relative group"
+                title="Klik untuk mengganti avatar emoji"
+              >
+                <span>{user.avatar || "🤲"}</span>
+                <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white text-slate-700 shadow-sm border border-slate-200 flex items-center justify-center text-xs group-hover:bg-emerald-50">
+                  ✏️
+                </span>
+              </button>
             </div>
+
+            {/* Emoji Picker Grid */}
+            {showEmojiPicker && (
+              <div className="mb-5 p-4 bg-white rounded-2xl border border-slate-200 shadow-md animate-in fade-in zoom-in-95">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-bold text-slate-800">
+                    Pilih Avatar Emoji
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    Tutup
+                  </button>
+                </div>
+                <div className="grid grid-cols-6 gap-2">
+                  {AVAILABLE_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleSelectAvatar(emoji)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-2xl transition hover:bg-emerald-50 hover:scale-110 active:scale-95 ${
+                        (user.avatar || "🤲") === emoji
+                          ? "bg-emerald-100 ring-2 ring-emerald-600"
+                          : "bg-slate-50"
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
             <p className="text-xs text-slate-500 mb-1">{user.email}</p>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mt-2">

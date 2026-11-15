@@ -2,6 +2,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
+  avatar?: string; // Emoji avatar e.g. "🤲", "👳‍♂️", "🧕", "📖", "🌙"
   streak_days: number;
   notes_count: number;
   last_note_date?: string; // YYYY-MM-DD

@@ -60,10 +60,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Du'a avatar pill */}
         <div
-          className="w-12 h-12 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-xl shadow-md select-none"
-          title="QK Notes"
+          className="w-12 h-12 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105"
+          title="QK Notes Avatar"
         >
-          🤲
+          {user.avatar || "🤲"}
         </div>
       </div>
 

@@ -21,12 +21,45 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Parse custom format for Arabic verse blocks:
-  // e.g. :::arabic\n[verse]\n:::
+  // Helper untuk parsing inline markdown: **bold**, ==highlight==, *italic*
+  const renderInline = (text: string) => {
+    const tokens = text.split(/(\*\*.*?\*\*|==.*?==|\*.*?\*)/g);
+    return tokens.map((token, i) => {
+      if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
+        return (
+          <strong key={i} className="font-bold text-slate-900">
+            {token.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (token.startsWith("==") && token.endsWith("==") && token.length >= 4) {
+        return (
+          <mark
+            key={i}
+            className="bg-amber-200/90 text-amber-950 px-1.5 py-0.5 rounded font-semibold"
+          >
+            {token.slice(2, -2)}
+          </mark>
+        );
+      }
+      if (token.startsWith("*") && token.endsWith("*") && token.length >= 2) {
+        return (
+          <em key={i} className="italic text-slate-600">
+            {token.slice(1, -1)}
+          </em>
+        );
+      }
+      return token;
+    });
+  };
+
+  // Parse formatting rich blocks: Arabic, alignments, headings, quotes, bullets, numbered
   const renderFormattedContent = (content: string) => {
-    const parts = content.split(/(:::arabic[\s\S]*?:::)/g);
+    // Split block delimiters: :::arabic, :::center, :::right, :::justify, :::left
+    const parts = content.split(/(:::(?:arabic|center|right|justify|left)[\s\S]*?:::)/g);
 
     return parts.map((part, index) => {
+      // 1. ARABIC BLOCK
       if (part.startsWith(":::arabic")) {
         const arabicText = part.replace(/:::arabic/g, "").replace(/:::/g, "").trim();
         return (
@@ -50,36 +83,78 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         );
       }
 
-      // Check headings
+      // 2. CENTER ALIGN BLOCK
+      if (part.startsWith(":::center")) {
+        const text = part.replace(/:::center/g, "").replace(/:::/g, "").trim();
+        return (
+          <div key={index} className="my-3 text-center text-slate-700 leading-relaxed font-medium">
+            {renderInline(text)}
+          </div>
+        );
+      }
+
+      // 3. RIGHT ALIGN BLOCK
+      if (part.startsWith(":::right")) {
+        const text = part.replace(/:::right/g, "").replace(/:::/g, "").trim();
+        return (
+          <div key={index} className="my-3 text-right text-slate-700 leading-relaxed">
+            {renderInline(text)}
+          </div>
+        );
+      }
+
+      // 4. JUSTIFY ALIGN BLOCK
+      if (part.startsWith(":::justify")) {
+        const text = part.replace(/:::justify/g, "").replace(/:::/g, "").trim();
+        return (
+          <div key={index} className="my-3 text-justify text-slate-700 leading-relaxed">
+            {renderInline(text)}
+          </div>
+        );
+      }
+
+      // 5. LEFT ALIGN BLOCK
+      if (part.startsWith(":::left")) {
+        const text = part.replace(/:::left/g, "").replace(/:::/g, "").trim();
+        return (
+          <div key={index} className="my-3 text-left text-slate-700 leading-relaxed">
+            {renderInline(text)}
+          </div>
+        );
+      }
+
+      // 6. STANDARD LINES (Headings, Quote, Bullets, Paragraphs)
       const lines = part.split("\n");
       return (
-        <div key={index} className="space-y-3">
+        <div key={index} className="space-y-2.5 my-2">
           {lines.map((line, lIdx) => {
             const trimmed = line.trim();
             if (!trimmed) return <div key={lIdx} className="h-2" />;
 
-            if (trimmed.startsWith("### ")) {
+            // Title (# )
+            if (trimmed.startsWith("# ")) {
               return (
-                <h3
+                <h1
                   key={lIdx}
-                  className={`font-bold text-slate-900 mt-5 mb-2 ${
+                  className={`font-black text-slate-900 mt-6 mb-3 tracking-tight ${
                     fontSizeLevel === "normal"
-                      ? "text-base"
+                      ? "text-xl"
                       : fontSizeLevel === "large"
-                      ? "text-lg"
-                      : "text-xl"
+                      ? "text-2xl"
+                      : "text-3xl"
                   }`}
                 >
-                  {trimmed.replace("### ", "")}
-                </h3>
+                  {renderInline(trimmed.replace("# ", ""))}
+                </h1>
               );
             }
 
+            // Heading (## )
             if (trimmed.startsWith("## ")) {
               return (
                 <h2
                   key={lIdx}
-                  className={`font-bold text-slate-900 mt-6 mb-2 ${
+                  className={`font-bold text-slate-900 mt-5 mb-2 ${
                     fontSizeLevel === "normal"
                       ? "text-lg"
                       : fontSizeLevel === "large"
@@ -87,28 +162,65 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                       : "text-2xl"
                   }`}
                 >
-                  {trimmed.replace("## ", "")}
+                  {renderInline(trimmed.replace("## ", ""))}
                 </h2>
               );
             }
 
-            if (trimmed.startsWith("*") && trimmed.endsWith("*")) {
+            // Subheading (### )
+            if (trimmed.startsWith("### ")) {
               return (
-                <p
+                <h3
                   key={lIdx}
-                  className={`italic text-slate-600 leading-relaxed ${
+                  className={`font-bold text-slate-800 mt-4 mb-1.5 ${
                     fontSizeLevel === "normal"
-                      ? "text-sm"
-                      : fontSizeLevel === "large"
                       ? "text-base"
-                      : "text-lg"
+                      : fontSizeLevel === "large"
+                      ? "text-lg"
+                      : "text-xl"
                   }`}
                 >
-                  {trimmed.slice(1, -1)}
-                </p>
+                  {renderInline(trimmed.replace("### ", ""))}
+                </h3>
               );
             }
 
+            // Quote (> )
+            if (trimmed.startsWith("> ")) {
+              return (
+                <blockquote
+                  key={lIdx}
+                  className="border-l-4 border-amber-400 bg-amber-50/40 pl-3.5 py-1.5 my-2 rounded-r-xl italic text-slate-700 leading-relaxed"
+                >
+                  {renderInline(trimmed.replace("> ", ""))}
+                </blockquote>
+              );
+            }
+
+            // Bullets (- or • )
+            if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+              return (
+                <div key={lIdx} className="flex items-start gap-2.5 ml-2 text-slate-700 leading-relaxed">
+                  <span className="text-emerald-700 font-bold select-none">•</span>
+                  <span>{renderInline(trimmed.replace(/^[-•]\s*/, ""))}</span>
+                </div>
+              );
+            }
+
+            // Numbered (1. , 2. )
+            if (/^\d+\.\s/.test(trimmed)) {
+              const numMatch = trimmed.match(/^(\d+\.)\s/);
+              const numPrefix = numMatch ? numMatch[1] : "";
+              const textContent = trimmed.replace(/^\d+\.\s/, "");
+              return (
+                <div key={lIdx} className="flex items-start gap-2 ml-2 text-slate-700 leading-relaxed">
+                  <span className="font-semibold text-emerald-800 select-none min-w-[1.2rem]">{numPrefix}</span>
+                  <span>{renderInline(textContent)}</span>
+                </div>
+              );
+            }
+
+            // Regular Body Paragraph
             return (
               <p
                 key={lIdx}
@@ -120,7 +232,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                     : "text-lg"
                 }`}
               >
-                {line}
+                {renderInline(line)}
               </p>
             );
           })}
@@ -291,4 +403,3 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
     </div>
   );
 };
-

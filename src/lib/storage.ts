@@ -80,6 +80,7 @@ export const storageService = {
               id: profile.id,
               email: profile.email || authData.user.email || "",
               name: profile.name || authData.user.user_metadata?.name || "QK",
+              avatar: profile.avatar || authData.user.user_metadata?.avatar || "🤲",
               streak_days: effectiveStreak,
               notes_count: profile.notes_count ?? 0,
               last_note_date: profile.last_note_date || "",
@@ -91,6 +92,7 @@ export const storageService = {
               id: authData.user.id,
               email: authData.user.email || "",
               name: authData.user.user_metadata?.name || "QK",
+              avatar: authData.user.user_metadata?.avatar || "🤲",
               streak_days: 0,
               notes_count: 0,
               last_note_date: "",
@@ -127,6 +129,7 @@ export const storageService = {
           id: user.id,
           name: user.name,
           email: user.email,
+          avatar: user.avatar || "🤲",
           streak_days: user.streak_days,
           notes_count: user.notes_count,
           last_note_date: user.last_note_date || null,
@@ -134,9 +137,13 @@ export const storageService = {
         };
 
         const { error } = await supabase.from("profiles").upsert(payload);
-        if (error && (error.message?.includes("last_note_date") || error.code === "PGRST204")) {
-          // Fallback jika kolom last_note_date belum dieksekusi di Supabase
-          delete payload.last_note_date;
+        if (error) {
+          if (error.message?.includes("avatar")) {
+            delete payload.avatar;
+          }
+          if (error.message?.includes("last_note_date") || error.code === "PGRST204") {
+            delete payload.last_note_date;
+          }
           await supabase.from("profiles").upsert(payload);
         }
       } catch (err) {

@@ -4,6 +4,7 @@ export const initialUser: UserProfile = {
   id: "guest-user",
   email: "",
   name: "Tamu",
+  avatar: "🤲",
   streak_days: 0,
   notes_count: 0,
   last_note_date: "",

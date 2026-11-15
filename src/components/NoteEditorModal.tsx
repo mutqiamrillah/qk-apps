@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, Save, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Save, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { CategoryItem, NoteItem } from "@/lib/types";
 
 interface NoteEditorModalProps {
@@ -26,6 +26,9 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const [tagsStr, setTagsStr] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"Online" | "Draft">("Online");
+  const [showFormatBar, setShowFormatBar] = useState(true);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (noteToEdit) {
@@ -49,12 +52,75 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleInsertSnippet = (type: "arabic" | "subheading" | "translation") => {
+  // Formatting tools implementation matching the user's reference image
+  const applyFormatting = (action: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.substring(start, end);
+
+    let replacement = "";
+
+    switch (action) {
+      case "Title":
+        replacement = selected ? `\n# ${selected}\n` : `\n# Judul Catatan\n`;
+        break;
+      case "Heading":
+        replacement = selected ? `\n## ${selected}\n` : `\n## Heading Baru\n`;
+        break;
+      case "Subheading":
+        replacement = selected ? `\n### ${selected}\n` : `\n### Subheading Baru\n`;
+        break;
+      case "Body":
+        replacement = selected ? selected.replace(/^[#>\s\-•*]+/gm, "") : `Teks paragraf biasa`;
+        break;
+      case "Bold":
+        replacement = selected ? `**${selected}**` : `**teks tebal**`;
+        break;
+      case "Highlight":
+        replacement = selected ? `==${selected}==` : `==teks disorot==`;
+        break;
+      case "Quote":
+        replacement = selected ? `\n> ${selected}\n` : `\n> Kutipan atau faidah ilmu...\n`;
+        break;
+      case "Bullets":
+        replacement = selected ? `\n- ${selected}\n` : `\n- Poin catatan\n`;
+        break;
+      case "Numbered":
+        replacement = selected ? `\n1. ${selected}\n` : `\n1. Poin pertama\n`;
+        break;
+      case "Align left":
+        replacement = selected ? `\n:::left\n${selected}\n:::\n` : `\n:::left\nTeks rata kiri\n:::\n`;
+        break;
+      case "Center":
+        replacement = selected ? `\n:::center\n${selected}\n:::\n` : `\n:::center\nTeks rata tengah\n:::\n`;
+        break;
+      case "Align right":
+        replacement = selected ? `\n:::right\n${selected}\n:::\n` : `\n:::right\nTeks rata kanan\n:::\n`;
+        break;
+      case "Justify":
+        replacement = selected ? `\n:::justify\n${selected}\n:::\n` : `\n:::justify\nTeks rata kiri-kanan\n:::\n`;
+        break;
+      default:
+        return;
+    }
+
+    const newContent = content.substring(0, start) + replacement + content.substring(end);
+    setContent(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursor = start + replacement.length;
+      textarea.setSelectionRange(newCursor, newCursor);
+    }, 10);
+  };
+
+  const handleInsertSnippet = (type: "arabic" | "translation") => {
     let snippet = "";
     if (type === "arabic") {
       snippet = "\n\n:::arabic\nبِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n:::\n";
-    } else if (type === "subheading") {
-      snippet = "\n\n### 1. Poin Pembahasan Baru\n";
     } else if (type === "translation") {
       snippet = '\n\n*Artinya: “Tuliskan terjemahan atau kutipan di sini...”*\n';
     }
@@ -76,7 +142,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       episode_no: episodeNo.trim() || undefined,
       tags,
       status,
-      date: new Date().toLocaleDateString("en-US", {
+      date: noteToEdit?.date || new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -92,7 +158,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-base font-bold text-slate-900">
@@ -185,35 +251,152 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Snippet Helper Buttons */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Sisipkan Format Cepat</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
+          {/* FORMAT PENULISAN (Sesuai Referensi Gambar) */}
+          <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/80">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Format Penulisan Teks</span>
+              </span>
               <button
                 type="button"
-                onClick={() => handleInsertSnippet("arabic")}
-                className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold hover:bg-emerald-100 transition"
+                onClick={() => setShowFormatBar(!showFormatBar)}
+                className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
               >
-                + Teks Arab (Ayat / Hadits)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertSnippet("translation")}
-                className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold hover:bg-amber-100 transition"
-              >
-                + Terjemahan / Kutipan
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInsertSnippet("subheading")}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold hover:bg-slate-200 transition"
-              >
-                + Sub-Judul
+                <span>{showFormatBar ? "Sembunyikan" : "Tampilkan"}</span>
+                {showFormatBar ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             </div>
+
+            {showFormatBar && (
+              <div className="space-y-3 pt-1">
+                {/* 2-Column Grid Sesuai Gambar Referensi */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-800">
+                  {/* Row 1 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Title")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-semibold transition flex items-center justify-between"
+                  >
+                    <span>Title</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Heading")}
+                    className="py-2 px-3 text-left rounded-2xl bg-[#e2f1fc] text-[#1b3a4b] font-bold transition flex items-center justify-between shadow-xs"
+                  >
+                    <span>Heading</span>
+                  </button>
+
+                  {/* Row 2 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Subheading")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-semibold transition flex items-center justify-between"
+                  >
+                    <span>Subheading</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Body")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Body</span>
+                  </button>
+
+                  {/* Row 3 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Bold")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-bold transition flex items-center justify-between"
+                  >
+                    <span>Bold</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Highlight")}
+                    className="py-2 px-3 text-left rounded-2xl bg-[#e2f1fc] text-[#1b3a4b] font-bold transition flex items-center justify-between shadow-xs"
+                  >
+                    <span>Highlight</span>
+                  </button>
+
+                  {/* Row 4 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Quote")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Quote</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Bullets")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Bullets</span>
+                  </button>
+
+                  {/* Row 5 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Numbered")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Numbered</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Align left")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Align left</span>
+                  </button>
+
+                  {/* Row 6 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Center")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Center</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Align right")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Align right</span>
+                  </button>
+
+                  {/* Row 7 */}
+                  <button
+                    type="button"
+                    onClick={() => applyFormatting("Justify")}
+                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
+                  >
+                    <span>Justify</span>
+                  </button>
+                </div>
+
+                {/* Islamic Quick Helpers */}
+                <div className="pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInsertSnippet("arabic")}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold hover:bg-emerald-100 transition"
+                  >
+                    + Teks Arab (Ayat / Hadits)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertSnippet("translation")}
+                    className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold hover:bg-amber-100 transition"
+                  >
+                    + Terjemahan
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Content Body */}
@@ -222,11 +405,12 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               Isi Rangkuman / Catatan *
             </label>
             <textarea
+              ref={textareaRef}
               required
-              rows={8}
+              rows={9}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Tuliskan intisari ceramah, faidah ilmu, poin-poin penting, atau doa di sini..."
+              placeholder="Tuliskan intisari ceramah atau pilih tombol format di atas untuk memperbagus tulisan..."
               className="w-full p-3.5 rounded-xl border border-slate-200 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed"
             />
           </div>
@@ -258,4 +442,3 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
     </div>
   );
 };
-

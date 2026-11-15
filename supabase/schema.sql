@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   name TEXT DEFAULT 'QK',
   email TEXT,
+  avatar TEXT DEFAULT '🤲',
   streak_days INT DEFAULT 0,
   notes_count INT DEFAULT 0,
   last_note_date TEXT DEFAULT NULL,
@@ -14,8 +15,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Pastikan kolom last_note_date ditambahkan jika tabel profiles sudah ada:
+-- Pastikan kolom baru ditambahkan jika tabel profiles sudah ada sebelumnya:
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_note_date TEXT DEFAULT NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT '🤲';
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
