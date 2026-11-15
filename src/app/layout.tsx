@@ -4,6 +4,17 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "QK Notes - Rangkuman Kajian & Catatan Penting",
   description: "Aplikasi pencatat rangkuman kajian, ceramah, dan podcast dengan tipografi ayat yang indah dan penyimpanan database cloud.",
+  manifest: "/manifest.json",
+  themeColor: "#134e43",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "QK Notes",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

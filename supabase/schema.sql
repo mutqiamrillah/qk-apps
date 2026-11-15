@@ -50,11 +50,17 @@ CREATE TABLE IF NOT EXISTS public.notes (
   episode_no TEXT,
   tags TEXT[] DEFAULT '{}',
   status TEXT DEFAULT 'Online',
+  is_pinned BOOLEAN DEFAULT FALSE,
+  is_favorite BOOLEAN DEFAULT FALSE,
   date TEXT,
   content TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Pastikan kolom baru notes ditambahkan jika tabel sudah ada sebelumnya:
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
@@ -85,11 +91,12 @@ USING (auth.uid() = user_id);
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, name, streak_days, notes_count, last_note_date)
+  INSERT INTO public.profiles (id, email, name, avatar, streak_days, notes_count, last_note_date)
   VALUES (
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'name', 'QK'),
+    COALESCE(NEW.raw_user_meta_data->>'avatar', '🤲'),
     0,
     0,
     NULL

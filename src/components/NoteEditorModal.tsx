@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Save, Sparkles } from "lucide-react";
 import { CategoryItem, NoteItem } from "@/lib/types";
 
 interface NoteEditorModalProps {
@@ -26,7 +26,6 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const [tagsStr, setTagsStr] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"Online" | "Draft">("Online");
-  const [showFormatBar, setShowFormatBar] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -251,166 +250,148 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
             </div>
           </div>
 
-          {/* FORMAT PENULISAN (Sesuai Referensi Gambar) */}
-          <div className="bg-slate-50/80 rounded-2xl p-3.5 border border-slate-200/80">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+          {/* FORMAT PENULISAN (Compact, Single-Line Horizontal Toolbar) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Format Penulisan Teks</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowFormatBar(!showFormatBar)}
-                className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
-              >
-                <span>{showFormatBar ? "Sembunyikan" : "Tampilkan"}</span>
-                {showFormatBar ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
+                <span>Format Teks</span>
+              </label>
+              <span className="text-[10px] text-slate-400">Geser untuk opsi lainnya ➔</span>
             </div>
 
-            {showFormatBar && (
-              <div className="space-y-3 pt-1">
-                {/* 2-Column Grid Sesuai Gambar Referensi */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-800">
-                  {/* Row 1 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Title")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-semibold transition flex items-center justify-between"
-                  >
-                    <span>Title</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Heading")}
-                    className="py-2 px-3 text-left rounded-2xl bg-[#e2f1fc] text-[#1b3a4b] font-bold transition flex items-center justify-between shadow-xs"
-                  >
-                    <span>Heading</span>
-                  </button>
-
-                  {/* Row 2 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Subheading")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-semibold transition flex items-center justify-between"
-                  >
-                    <span>Subheading</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Body")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Body</span>
-                  </button>
-
-                  {/* Row 3 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Bold")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-bold transition flex items-center justify-between"
-                  >
-                    <span>Bold</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Highlight")}
-                    className="py-2 px-3 text-left rounded-2xl bg-[#e2f1fc] text-[#1b3a4b] font-bold transition flex items-center justify-between shadow-xs"
-                  >
-                    <span>Highlight</span>
-                  </button>
-
-                  {/* Row 4 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Quote")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Quote</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Bullets")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Bullets</span>
-                  </button>
-
-                  {/* Row 5 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Numbered")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Numbered</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Align left")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Align left</span>
-                  </button>
-
-                  {/* Row 6 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Center")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Center</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Align right")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Align right</span>
-                  </button>
-
-                  {/* Row 7 */}
-                  <button
-                    type="button"
-                    onClick={() => applyFormatting("Justify")}
-                    className="py-2 px-3 text-left rounded-xl hover:bg-slate-200/60 font-medium transition flex items-center justify-between"
-                  >
-                    <span>Justify</span>
-                  </button>
-                </div>
-
-                {/* Islamic Quick Helpers */}
-                <div className="pt-2 border-t border-slate-200/60 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleInsertSnippet("arabic")}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-semibold hover:bg-emerald-100 transition"
-                  >
-                    + Teks Arab (Ayat / Hadits)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleInsertSnippet("translation")}
-                    className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-[11px] font-semibold hover:bg-amber-100 transition"
-                  >
-                    + Terjemahan
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Horizontal Scrollable Sleek Toolbar Strip */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-2 bg-slate-50 border border-slate-200/80 rounded-xl">
+              <button
+                type="button"
+                onClick={() => applyFormatting("Title")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format sebagai Title (#)"
+              >
+                Title
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Heading")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format sebagai Heading (##)"
+              >
+                Heading
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Subheading")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format sebagai Subheading (###)"
+              >
+                Subheading
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Body")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format sebagai Body biasa"
+              >
+                Body
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Bold")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Bold (**teks**)"
+              >
+                Bold
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Highlight")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Highlight (==teks==)"
+              >
+                Highlight
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Quote")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Quote (>)"
+              >
+                Quote
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Bullets")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Bullet List (-)"
+              >
+                Bullets
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Numbered")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Numbered List (1.)"
+              >
+                Numbered
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Center")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Rata Tengah"
+              >
+                Center
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Align left")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Rata Kiri"
+              >
+                Align left
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Align right")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Rata Kanan"
+              >
+                Align right
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("Justify")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Rata Kanan-Kiri"
+              >
+                Justify
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSnippet("arabic")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+              >
+                + Teks Arab
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSnippet("translation")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 active:scale-95 transition shrink-0"
+              >
+                + Terjemahan
+              </button>
+            </div>
           </div>
 
           {/* Content Body */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Isi Rangkuman / Catatan *
-            </label>
             <textarea
               ref={textareaRef}
               required
-              rows={9}
+              rows={11}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Tuliskan intisari ceramah atau pilih tombol format di atas untuk memperbagus tulisan..."
+              placeholder="Tuliskan intisari ceramah atau gunakan tombol format di atas..."
               className="w-full p-3.5 rounded-xl border border-slate-200 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed"
             />
           </div>

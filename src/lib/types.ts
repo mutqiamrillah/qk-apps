@@ -18,6 +18,8 @@ export interface NoteItem {
   episode_no?: string;
   tags: string[];
   status: "Online" | "Draft" | "Archived";
+  is_pinned?: boolean;
+  is_favorite?: boolean;
   date: string;
   content: string;
   user_id?: string;

@@ -1,0 +1,19 @@
+{
+  "name": "QK Notes - Rangkuman Kajian",
+  "short_name": "QK Notes",
+  "description": "Aplikasi pencatat rangkuman kajian dan podcast dengan tipografi ayat yang indah.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#134e43",
+  "theme_color": "#134e43",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

@@ -10,6 +10,7 @@ import { NoteEditorModal } from "@/components/NoteEditorModal";
 import { BottomNav, NavTab } from "@/components/BottomNav";
 import { SearchModal } from "@/components/SearchModal";
 import { ProfileView } from "@/components/ProfileView";
+import { ShareQuoteModal } from "@/components/ShareQuoteModal";
 import { storageService, calculateStreakOnNewNote } from "@/lib/storage";
 import { CategoryItem, NoteItem, UserProfile } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
@@ -27,6 +28,8 @@ export default function HomePage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<NoteItem | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareNote, setShareNote] = useState<NoteItem | null>(null);
 
   // Category filter state in Study tab
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
@@ -93,6 +96,19 @@ export default function HomePage() {
     setIsEditorOpen(true);
   };
 
+  const handleTogglePin = async (note: NoteItem) => {
+    const updatedNote: NoteItem = {
+      ...note,
+      is_pinned: !note.is_pinned,
+    };
+    await handleSaveNote(updatedNote);
+  };
+
+  const handleOpenShare = (note: NoteItem) => {
+    setShareNote(note);
+    setIsShareOpen(true);
+  };
+
   const handleSaveNote = async (savedNote: NoteItem) => {
     const isNewNote = !notes.some((n) => n.id === savedNote.id);
     const updated = await storageService.saveNote(savedNote);
@@ -145,6 +161,16 @@ export default function HomePage() {
     await storageService.saveCategories(updatedCategories);
   };
 
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (categoryId === "all") return;
+    const updatedCategories = categories.filter((c) => c.id !== categoryId);
+    setCategories(updatedCategories);
+    await storageService.saveCategories(updatedCategories);
+    if (selectedCategoryId === categoryId) {
+      setSelectedCategoryId("all");
+    }
+  };
+
   const handleUpdateUser = async (updatedUser: UserProfile) => {
     setUser(updatedUser);
     await storageService.saveUser(updatedUser);
@@ -172,6 +198,8 @@ export default function HomePage() {
           onBack={() => setActiveNote(null)}
           onDelete={handleDeleteNote}
           onEdit={handleEditNote}
+          onTogglePin={handleTogglePin}
+          onOpenShare={handleOpenShare}
         />
       ) : (
         /* --- MAIN APP TABS VIEW --- */
@@ -197,6 +225,7 @@ export default function HomePage() {
                   onSelectNote={handleSelectNote}
                   onSeeAllClick={() => setActiveTab("study")}
                   onLoginClick={() => setActiveTab("profile")}
+                  onTogglePin={handleTogglePin}
                 />
               </>
             )}
@@ -207,6 +236,7 @@ export default function HomePage() {
                 selectedCategoryId={selectedCategoryId}
                 onSelectCategory={setSelectedCategoryId}
                 onAddCategory={handleAddCategory}
+                onDeleteCategory={handleDeleteCategory}
                 notes={notes}
                 onSelectNote={handleSelectNote}
               />
@@ -231,6 +261,7 @@ export default function HomePage() {
                     isLoggedIn={user.is_logged_in}
                     onSelectNote={handleSelectNote}
                     onLoginClick={() => setActiveTab("profile")}
+                    onTogglePin={handleTogglePin}
                   />
                 </div>
               </div>
@@ -274,6 +305,15 @@ export default function HomePage() {
         notes={notes}
         onClose={() => setIsSearchOpen(false)}
         onSelectNote={handleSelectNote}
+      />
+
+      <ShareQuoteModal
+        isOpen={isShareOpen}
+        note={shareNote || activeNote}
+        onClose={() => {
+          setIsShareOpen(false);
+          setShareNote(null);
+        }}
       />
     </div>
   );

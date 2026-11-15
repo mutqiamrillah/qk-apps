@@ -215,6 +215,8 @@ export const storageService = {
               episode_no: d.episode_no || "",
               tags: Array.isArray(d.tags) ? d.tags : [],
               status: d.status || "Online",
+              is_pinned: Boolean(d.is_pinned),
+              is_favorite: Boolean(d.is_favorite),
               date: d.date || new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
               content: d.content || "",
               user_id: d.user_id,
@@ -268,7 +270,7 @@ export const storageService = {
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
           cleanNote.user_id = authData.user.id;
-          const { error: upsertErr } = await supabase.from("notes").upsert({
+          const notePayload: Record<string, any> = {
             id: cleanNote.id,
             user_id: authData.user.id,
             title: cleanNote.title,
@@ -278,12 +280,23 @@ export const storageService = {
             episode_no: cleanNote.episode_no,
             tags: cleanNote.tags,
             status: cleanNote.status,
+            is_pinned: Boolean(cleanNote.is_pinned),
+            is_favorite: Boolean(cleanNote.is_favorite),
             date: cleanNote.date,
             content: cleanNote.content,
             updated_at: now,
-          });
+          };
+
+          const { error: upsertErr } = await supabase.from("notes").upsert(notePayload);
           if (upsertErr) {
-            console.error("Supabase save note error:", upsertErr);
+            // Fallback jika kolom is_pinned/is_favorite belum di-alter di Supabase
+            if (upsertErr.message?.includes("is_pinned") || upsertErr.message?.includes("is_favorite")) {
+              delete notePayload.is_pinned;
+              delete notePayload.is_favorite;
+              await supabase.from("notes").upsert(notePayload);
+            } else {
+              console.error("Supabase save note error:", upsertErr);
+            }
           }
         }
       } catch (err) {
