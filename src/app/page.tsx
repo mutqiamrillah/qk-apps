@@ -12,11 +12,12 @@ import { SearchModal } from "@/components/SearchModal";
 import { ProfileView } from "@/components/ProfileView";
 import { ShareQuoteModal } from "@/components/ShareQuoteModal";
 import { storageService, calculateStreakOnNewNote } from "@/lib/storage";
-import { CategoryItem, NoteItem, UserProfile } from "@/lib/types";
+import { CategoryItem, NoteItem, UserProfile, AppTheme } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<NavTab>("home");
+  const [theme, setTheme] = useState<AppTheme>("light");
   const [user, setUser] = useState<UserProfile>(initialUser);
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
   const [categories, setCategories] = useState<CategoryItem[]>(initialCategories);
@@ -33,6 +34,32 @@ export default function HomePage() {
 
   // Category filter state in Study tab
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
+
+  // Load initial theme from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("qk_app_theme") as AppTheme | null;
+      if (savedTheme && ["light", "sepia", "dark"].includes(savedTheme)) {
+        setTheme(savedTheme);
+      }
+    }
+  }, []);
+
+  const handleThemeChange = (newTheme: AppTheme) => {
+    setTheme(newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("qk_app_theme", newTheme);
+    }
+  };
+
+  const handleCycleTheme = () => {
+    const next: Record<AppTheme, AppTheme> = {
+      light: "sepia",
+      sepia: "dark",
+      dark: "light",
+    };
+    handleThemeChange(next[theme]);
+  };
 
   // Load initial data from storage & sync on auth state change
   useEffect(() => {
@@ -189,12 +216,20 @@ export default function HomePage() {
     setActiveTab("home");
   };
 
+  const appContainerClasses = {
+    light: "bg-white text-slate-900",
+    sepia: "bg-[#faf6ee] text-[#423120]",
+    dark: "bg-[#071915] text-[#d1e5df]",
+  }[theme];
+
   return (
-    <div className="min-h-screen bg-white flex flex-col relative select-none">
+    <div className={`min-h-screen flex flex-col relative select-none transition-colors duration-200 ${appContainerClasses}`}>
       {activeNote ? (
         /* --- VIEW READER JIKA SEDANG BUKA CATATAN --- */
         <NoteReader
           note={activeNote}
+          theme={theme}
+          onThemeChange={handleThemeChange}
           onBack={() => setActiveNote(null)}
           onDelete={handleDeleteNote}
           onEdit={handleEditNote}
@@ -204,9 +239,11 @@ export default function HomePage() {
       ) : (
         /* --- MAIN APP TABS VIEW --- */
         <>
-          {/* Top Header: Hanya menyisakan icon logout sesuai instruksi */}
+          {/* Top Header dengan Theme Toggle Icon & Logout/Login */}
           <Header
             user={user}
+            theme={theme}
+            onCycleTheme={handleCycleTheme}
             onLogout={handleLogout}
             onLoginClick={() => setActiveTab("profile")}
           />
@@ -221,6 +258,7 @@ export default function HomePage() {
                 />
                 <RecentNotes
                   notes={notes}
+                  theme={theme}
                   isLoggedIn={user.is_logged_in}
                   onSelectNote={handleSelectNote}
                   onSeeAllClick={() => setActiveTab("study")}
@@ -233,6 +271,7 @@ export default function HomePage() {
             {activeTab === "study" && (
               <CategoryGrid
                 categories={categories}
+                theme={theme}
                 selectedCategoryId={selectedCategoryId}
                 onSelectCategory={setSelectedCategoryId}
                 onAddCategory={handleAddCategory}
@@ -244,20 +283,31 @@ export default function HomePage() {
 
             {activeTab === "search" && (
               <div className="p-5">
-                <h1 className="text-2xl font-bold text-slate-900 mb-4">Search</h1>
+                <h1 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "text-white" : theme === "sepia" ? "text-[#423120]" : "text-slate-900"}`}>
+                  Search
+                </h1>
                 <button
                   onClick={() => setIsSearchOpen(true)}
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 text-sm text-left flex items-center justify-between"
+                  className={`w-full p-4 rounded-2xl border text-sm text-left flex items-center justify-between transition ${
+                    theme === "dark"
+                      ? "bg-[#0b231e] border-[#16443b] text-emerald-200/60 hover:border-emerald-500"
+                      : theme === "sepia"
+                      ? "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f]/70 hover:border-amber-400"
+                      : "bg-slate-50 border-slate-200 text-slate-400 hover:border-emerald-300"
+                  }`}
                 >
                   <span>Ketik kata kunci atau tag...</span>
                   <span>🔍</span>
                 </button>
                 <div className="mt-6">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  <h3 className={`text-xs font-bold uppercase tracking-wider mb-3 ${
+                    theme === "dark" ? "text-emerald-500/70" : theme === "sepia" ? "text-amber-800/70" : "text-slate-400"
+                  }`}>
                     Semua Catatan ({notes.length})
                   </h3>
                   <RecentNotes
                     notes={notes}
+                    theme={theme}
                     isLoggedIn={user.is_logged_in}
                     onSelectNote={handleSelectNote}
                     onLoginClick={() => setActiveTab("profile")}
@@ -271,6 +321,7 @@ export default function HomePage() {
               <ProfileView
                 user={user}
                 notes={notes}
+                theme={theme}
                 onUserChange={handleUpdateUser}
                 onLogout={handleLogout}
               />
@@ -280,6 +331,7 @@ export default function HomePage() {
           {/* Bottom Navigation */}
           <BottomNav
             activeTab={activeTab}
+            theme={theme}
             isLoggedIn={user.is_logged_in}
             onTabChange={(tab) => {
               setActiveTab(tab);

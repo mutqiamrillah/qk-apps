@@ -12,11 +12,14 @@ import {
   Sun,
   Moon,
   BookOpen,
+  Clock,
 } from "lucide-react";
-import { NoteItem } from "@/lib/types";
+import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
 
 interface NoteReaderProps {
   note: NoteItem;
+  theme?: AppTheme;
+  onThemeChange?: (theme: AppTheme) => void;
   onBack: () => void;
   onDelete: (id: string) => void;
   onEdit: (note: NoteItem) => void;
@@ -26,6 +29,8 @@ interface NoteReaderProps {
 
 export const NoteReader: React.FC<NoteReaderProps> = ({
   note,
+  theme = "light",
+  onThemeChange,
   onBack,
   onDelete,
   onEdit,
@@ -34,9 +39,20 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 }) => {
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xl">("normal");
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
-  const [readingTheme, setReadingTheme] = useState<"light" | "sepia" | "dark">("light");
+  const [readingTheme, setReadingTheme] = useState<"light" | "sepia" | "dark">(theme);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  React.useEffect(() => {
+    if (theme) {
+      setReadingTheme(theme);
+    }
+  }, [theme]);
+
+  const changeTheme = (newTheme: "light" | "sepia" | "dark") => {
+    setReadingTheme(newTheme);
+    onThemeChange?.(newTheme);
+  };
 
   // Helper untuk parsing inline markdown: **bold**, ==highlight==, *italic*
   const renderInline = (text: string) => {
@@ -389,6 +405,14 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           </div>
         )}
 
+        {/* Full timestamp with seconds precision */}
+        {formatFullDateTime(note.date, note.created_at) && (
+          <div className="flex items-center gap-1.5 mt-2.5 text-xs opacity-70 font-mono">
+            <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>{formatFullDateTime(note.date, note.created_at)}</span>
+          </div>
+        )}
+
         {/* Meta pill dropdown */}
         <div className="mt-4 mb-6">
           <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-medium ${pillClasses}`}>
@@ -495,7 +519,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             }`}>
               <button
                 onClick={() => {
-                  setReadingTheme("light");
+                  changeTheme("light");
                   setShowThemeMenu(false);
                 }}
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
@@ -505,7 +529,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               </button>
               <button
                 onClick={() => {
-                  setReadingTheme("sepia");
+                  changeTheme("sepia");
                   setShowThemeMenu(false);
                 }}
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
@@ -515,7 +539,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               </button>
               <button
                 onClick={() => {
-                  setReadingTheme("dark");
+                  changeTheme("dark");
                   setShowThemeMenu(false);
                 }}
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, Sparkles } from "lucide-react";
-import { CategoryItem, NoteItem } from "@/lib/types";
+import { CategoryItem, NoteItem, formatFullDateTime } from "@/lib/types";
 
 interface NoteEditorModalProps {
   isOpen: boolean;
@@ -133,6 +133,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       .map((t) => t.trim().replace(/^#/, ""))
       .filter(Boolean);
 
+    const nowIso = new Date().toISOString();
     const updatedNote: NoteItem = {
       id: noteToEdit ? noteToEdit.id : `note-${Date.now()}`,
       title: title.trim() || "Untitled Note",
@@ -141,14 +142,10 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       episode_no: episodeNo.trim() || undefined,
       tags,
       status,
-      date: noteToEdit?.date || new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
+      date: noteToEdit?.date || formatFullDateTime(undefined, nowIso),
       content,
-      created_at: noteToEdit?.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: noteToEdit?.created_at || nowIso,
+      updated_at: nowIso,
     };
 
     onSave(updatedNote);

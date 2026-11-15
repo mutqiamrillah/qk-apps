@@ -12,12 +12,13 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
-import { UserProfile, NoteItem } from "@/lib/types";
+import { UserProfile, NoteItem, AppTheme } from "@/lib/types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 interface ProfileViewProps {
   user: UserProfile;
   notes: NoteItem[];
+  theme?: AppTheme;
   onUserChange: (user: UserProfile) => void;
   onLogout: () => void;
 }
@@ -25,6 +26,7 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   notes,
+  theme = "light",
   onUserChange,
   onLogout,
 }) => {
@@ -184,13 +186,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     downloadAnchor.remove();
   };
 
+  const titleTextClasses = {
+    light: "text-slate-900",
+    sepia: "text-[#423120]",
+    dark: "text-white",
+  }[theme];
+
+  const cardBaseClasses = {
+    light: "bg-white border-slate-150 shadow-sm text-slate-900",
+    sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm text-[#423120]",
+    dark: "bg-[#0e2c26] border-[#17443b] shadow-sm text-white",
+  }[theme];
+
   return (
     <div className="p-5 pb-28">
-      <h1 className="text-2xl font-bold text-slate-900 mb-4">Profile</h1>
+      <h1 className={`text-2xl font-bold mb-4 ${titleTextClasses}`}>Profile</h1>
 
       {!user.is_logged_in ? (
         /* --- TAMPILAN LOGIN / SIGNUP JIKA BELUM LOGIN --- */
-        <div className="bg-white rounded-3xl p-6 border border-slate-150 shadow-sm">
+        <div className={`rounded-3xl p-6 border ${cardBaseClasses}`}>
           {/* Header Card */}
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
@@ -336,7 +350,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         /* --- TAMPILAN JIKA SUDAH LOGIN --- */
         <div className="space-y-4">
           {/* User Card */}
-          <div className="bg-slate-50 rounded-3xl p-6 text-center border border-slate-150">
+          <div className={`rounded-3xl p-6 text-center border ${cardBaseClasses}`}>
             {/* Interactive Emoji Avatar */}
             <div className="relative inline-block mx-auto mb-3">
               <button
@@ -386,8 +400,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             )}
 
-            <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
-            <p className="text-xs text-slate-500 mb-1">{user.email}</p>
+            <h2 className="text-xl font-bold">{user.name}</h2>
+            <p className="text-xs opacity-70 mb-1">{user.email}</p>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mt-2">
               <Sparkles className="w-3 h-3" />
               <span>Tersimpan di Cloud Database</span>
@@ -395,20 +409,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
             {/* Stats Counter */}
             <div className="grid grid-cols-2 gap-3 mt-6">
-              <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                <div className="text-2xl font-black text-emerald-800">
+              <div className={`p-3 rounded-2xl shadow-sm border ${
+                theme === "dark"
+                  ? "bg-[#0b231e] border-[#16443b]"
+                  : theme === "sepia"
+                  ? "bg-[#f3ebd9] border-[#e2d5bd]"
+                  : "bg-slate-50 border-slate-100"
+              }`}>
+                <div className="text-2xl font-black text-emerald-700">
                   {user.streak_days}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">
+                <div className="text-[11px] opacity-70 font-medium">
                   Hari Streak
                 </div>
               </div>
 
-              <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                <div className="text-2xl font-black text-emerald-800">
+              <div className={`p-3 rounded-2xl shadow-sm border ${
+                theme === "dark"
+                  ? "bg-[#0b231e] border-[#16443b]"
+                  : theme === "sepia"
+                  ? "bg-[#f3ebd9] border-[#e2d5bd]"
+                  : "bg-slate-50 border-slate-100"
+              }`}>
+                <div className="text-2xl font-black text-emerald-700">
                   {notes.length}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium">
+                <div className="text-[11px] opacity-70 font-medium">
                   Total Catatan
                 </div>
               </div>
@@ -416,7 +442,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           {/* Ubah Nama Profil */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-150">
+          <div className={`rounded-3xl p-5 border ${cardBaseClasses}`}>
             <h3 className="text-xs font-bold text-slate-700 mb-2">
               Ubah Nama Panggilan
             </h3>

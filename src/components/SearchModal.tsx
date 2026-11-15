@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, X } from "lucide-react";
-import { NoteItem } from "@/lib/types";
+import { Search, X, Clock } from "lucide-react";
+import { NoteItem, formatFullDateTime } from "@/lib/types";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -75,8 +75,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <h4 className="text-sm font-bold text-slate-900 truncate">
                     {note.title}
                   </h4>
-                  <span className="text-[10px] text-slate-400 shrink-0 ml-2">
-                    {note.date}
+                  <span className="text-[10px] text-slate-400 shrink-0 ml-2 font-mono flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5 text-emerald-600" />
+                    <span>{formatFullDateTime(note.date, note.created_at)}</span>
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5 truncate">

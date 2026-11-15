@@ -1,3 +1,37 @@
+export type AppTheme = "light" | "sepia" | "dark";
+
+export function formatFullDateTime(dateStr?: string, created_at?: string): string {
+  const candidate = created_at || dateStr;
+  if (!candidate) return "";
+
+  const d = new Date(candidate);
+  if (!isNaN(d.getTime())) {
+    const day = d.getDate().toString().padStart(2, "0");
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    const seconds = d.getSeconds().toString().padStart(2, "0");
+    return `${day} ${month} ${year}, ${hours}:${minutes}:${seconds}`;
+  }
+
+  return dateStr || "";
+}
+
 export interface UserProfile {
   id: string;
   email: string;

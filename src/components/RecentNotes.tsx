@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import { NoteItem } from "@/lib/types";
-import { LogIn, Pin } from "lucide-react";
+import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
+import { LogIn, Pin, Clock } from "lucide-react";
 
 interface RecentNotesProps {
   notes: NoteItem[];
+  theme?: AppTheme;
   isLoggedIn?: boolean;
   onSelectNote: (note: NoteItem) => void;
   onSeeAllClick?: () => void;
@@ -15,6 +16,7 @@ interface RecentNotesProps {
 
 export const RecentNotes: React.FC<RecentNotesProps> = ({
   notes,
+  theme = "light",
   isLoggedIn = false,
   onSelectNote,
   onSeeAllClick,
@@ -27,11 +29,30 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
     if (!a.is_pinned && b.is_pinned) return 1;
     return 0;
   });
+
+  const sectionTitleClasses = {
+    light: "text-slate-900",
+    sepia: "text-[#423120]",
+    dark: "text-white",
+  }[theme];
+
+  const cardBaseClasses = {
+    light: "bg-white border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-emerald-300 text-slate-900",
+    sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm hover:border-amber-400 text-[#423120]",
+    dark: "bg-[#0e2c26] border-[#17443b] shadow-sm hover:border-emerald-500 text-white",
+  }[theme];
+
+  const emptyBoxClasses = {
+    light: "bg-slate-50/80 border-slate-200 text-slate-700",
+    sepia: "bg-[#f3ebd9]/60 border-[#e2d5bd] text-[#5c462f]",
+    dark: "bg-[#0b231e] border-[#16443b] text-[#d1e5df]",
+  }[theme];
+
   return (
     <section className="px-5 mt-5 pb-24">
       {/* Section Header */}
       <div className="flex items-center justify-between mb-3.5">
-        <h2 className="text-base font-bold text-slate-900">Recent notes</h2>
+        <h2 className={`text-base font-bold ${sectionTitleClasses}`}>Recent notes</h2>
         {onSeeAllClick && notes.length > 0 && (
           <button
             onClick={onSeeAllClick}
@@ -45,14 +66,14 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
       {/* Note List */}
       <div className="space-y-3">
         {sortedNotes.length === 0 ? (
-          <div className="text-center py-10 px-4 bg-slate-50/80 rounded-3xl border border-dashed border-slate-200">
+          <div className={`text-center py-10 px-4 rounded-3xl border border-dashed ${emptyBoxClasses}`}>
             <span className="text-3xl block mb-2">📖</span>
             {!isLoggedIn ? (
               <>
-                <p className="text-sm text-slate-700 font-bold">
+                <p className="text-sm font-bold">
                   Belum ada catatan
                 </p>
-                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+                <p className="text-xs opacity-75 mt-1 max-w-xs mx-auto leading-relaxed">
                   Catatan disimpan berdasarkan akun penulisnya. Silakan masuk atau daftar terlebih dahulu.
                 </p>
                 {onLoginClick && (
@@ -67,10 +88,10 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
               </>
             ) : (
               <>
-                <p className="text-sm text-slate-700 font-bold">
+                <p className="text-sm font-bold">
                   Belum ada catatan tersimpan
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs opacity-60 mt-1">
                   Tekan tombol + di kanan bawah untuk membuat rangkuman baru.
                 </p>
               </>
@@ -78,19 +99,20 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
           </div>
         ) : (
           sortedNotes.map((note) => {
-            const metaParts = [note.category || "Lectures"];
-            if (note.speaker) metaParts.push(note.speaker);
-            if (note.date) metaParts.push(note.date);
-            const subtitle = metaParts.join(" · ");
+            const formattedDate = formatFullDateTime(note.date, note.created_at);
 
             return (
               <div
                 key={note.id}
                 onClick={() => onSelectNote(note)}
-                className={`group relative flex items-start gap-3.5 p-4 rounded-2xl bg-white border transition-all cursor-pointer ${
+                className={`group relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${cardBaseClasses} ${
                   note.is_pinned
-                    ? "border-amber-300/80 bg-amber-50/20 shadow-[0_2px_10px_rgba(245,158,11,0.08)] hover:border-amber-400"
-                    : "border-slate-150/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-emerald-300"
+                    ? theme === "dark"
+                      ? "border-amber-400/50 bg-[#143a32]"
+                      : theme === "sepia"
+                      ? "border-amber-400 bg-[#f7eedc]"
+                      : "border-amber-300/80 bg-amber-50/20 shadow-[0_2px_10px_rgba(245,158,11,0.08)]"
+                    : ""
                 }`}
               >
                 {/* Book Icon with Soft Peach Background */}
@@ -107,13 +129,23 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900 truncate">
+                    <h3 className="text-sm font-bold truncate">
                       {note.title || "Untitled"}
                     </h3>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">
-                    {subtitle}
+
+                  {/* Category & Speaker */}
+                  <p className="text-xs opacity-75 mt-0.5 truncate">
+                    {[note.category || "Lectures", note.speaker].filter(Boolean).join(" · ")}
                   </p>
+
+                  {/* Timestamp with seconds precision */}
+                  {formattedDate && (
+                    <div className="flex items-center gap-1 text-[11px] opacity-65 mt-1 font-mono">
+                      <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span className="truncate">{formattedDate}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 mt-2">
                     {note.is_pinned && (
@@ -142,7 +174,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                     className={`absolute top-3.5 right-3.5 w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
                       note.is_pinned
                         ? "text-amber-600 bg-amber-100 hover:bg-amber-200"
-                        : "text-slate-300 hover:text-slate-600 hover:bg-slate-100 opacity-60 group-hover:opacity-100"
+                        : "opacity-60 group-hover:opacity-100 hover:bg-black/5"
                     }`}
                     title={note.is_pinned ? "Lepas Sematan (Unpin)" : "Sematkan Catatan (Pin)"}
                   >

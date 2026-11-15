@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { CategoryItem, NoteItem } from "@/lib/types";
+import { Plus, Trash2, Clock } from "lucide-react";
+import { CategoryItem, NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
 
 interface CategoryGridProps {
   categories: CategoryItem[];
+  theme?: AppTheme;
   selectedCategoryId: string;
   onSelectCategory: (categoryId: string) => void;
   onAddCategory: (categoryName: string) => void;
@@ -16,6 +17,7 @@ interface CategoryGridProps {
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({
   categories,
+  theme = "light",
   selectedCategoryId,
   onSelectCategory,
   onAddCategory,
@@ -26,6 +28,18 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
+
+  const titleTextClasses = {
+    light: "text-slate-900",
+    sepia: "text-[#423120]",
+    dark: "text-white",
+  }[theme];
+
+  const cardBaseClasses = {
+    light: "bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 text-slate-900",
+    sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm hover:border-amber-400 text-[#423120]",
+    dark: "bg-[#0e2c26] border-[#17443b] shadow-sm hover:border-emerald-500 text-white",
+  }[theme];
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +76,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   return (
     <div className="px-5 pt-3 pb-24">
       {/* Title */}
-      <h1 className="text-2xl font-bold text-slate-900 mb-4">Study</h1>
+      <h1 className={`text-2xl font-bold mb-4 ${titleTextClasses}`}>Study</h1>
 
       {/* 2-Column Categories Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -136,7 +150,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
 
       {/* Notes List under Category */}
       <div className="mt-8">
-        <h2 className="text-base font-bold text-slate-900 mb-3.5">
+        <h2 className={`text-base font-bold mb-3.5 ${titleTextClasses}`}>
           {selectedCategoryId === "all"
             ? "All notes"
             : `Notes in ${
@@ -146,54 +160,75 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
 
         <div className="space-y-3">
           {filteredNotes.length === 0 ? (
-            <div className="text-center py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <div className={`text-center py-8 rounded-2xl border border-dashed ${
+              theme === "dark"
+                ? "bg-[#0b231e] border-[#16443b] text-slate-300"
+                : theme === "sepia"
+                ? "bg-[#f3ebd9]/60 border-[#e2d5bd] text-[#5c462f]"
+                : "bg-slate-50 border-slate-200 text-slate-500"
+            }`}>
               <span className="text-2xl">🌱</span>
-              <p className="text-xs text-slate-500 font-medium mt-2">
+              <p className="text-xs font-medium mt-2 opacity-75">
                 Belum ada catatan pada kategori ini.
               </p>
             </div>
           ) : (
-            filteredNotes.map((note) => (
-              <div
-                key={note.id}
-                onClick={() => onSelectNote(note)}
-                className={`group flex items-start gap-3.5 p-4 rounded-2xl bg-white border transition-all cursor-pointer ${
-                  note.is_pinned
-                    ? "border-amber-300/80 bg-amber-50/20 shadow-[0_2px_10px_rgba(245,158,11,0.08)] hover:border-amber-400"
-                    : "border-slate-150/80 shadow-sm hover:shadow-md hover:border-emerald-300"
-                }`}
-              >
+            filteredNotes.map((note) => {
+              const formattedDate = formatFullDateTime(note.date, note.created_at);
+
+              return (
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform ${
+                  key={note.id}
+                  onClick={() => onSelectNote(note)}
+                  className={`group flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${cardBaseClasses} ${
                     note.is_pinned
-                      ? "bg-amber-100 border border-amber-300 text-amber-900"
-                      : "bg-[#fed7aa]/35 border border-amber-200/40 text-amber-900"
+                      ? theme === "dark"
+                        ? "border-amber-400/50 bg-[#143a32]"
+                        : theme === "sepia"
+                        ? "border-amber-400 bg-[#f7eedc]"
+                        : "border-amber-300/80 bg-amber-50/20 shadow-[0_2px_10px_rgba(245,158,11,0.08)]"
+                      : ""
                   }`}
                 >
-                  {note.is_pinned ? "📌" : "📖"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-slate-900 truncate">
-                    {note.title || "Untitled"}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1 truncate">
-                    {[note.category, note.speaker, note.date]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  <div className="flex items-center gap-2 mt-2">
-                    {note.is_pinned && (
-                      <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        📌 Disematkan
-                      </span>
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform ${
+                      note.is_pinned
+                        ? "bg-amber-100 border border-amber-300 text-amber-900"
+                        : "bg-[#fed7aa]/35 border border-amber-200/40 text-amber-900"
+                    }`}
+                  >
+                    {note.is_pinned ? "📌" : "📖"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold truncate">
+                      {note.title || "Untitled"}
+                    </h3>
+                    <p className="text-xs opacity-75 mt-0.5 truncate">
+                      {[note.category, note.speaker].filter(Boolean).join(" · ")}
+                    </p>
+
+                    {/* Timestamp with seconds precision */}
+                    {formattedDate && (
+                      <div className="flex items-center gap-1 text-[11px] opacity-65 mt-1 font-mono">
+                        <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span className="truncate">{formattedDate}</span>
+                      </div>
                     )}
-                    <span className="inline-block bg-teal-50 text-teal-700 border border-teal-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                      {note.status || "Online"}
-                    </span>
+
+                    <div className="flex items-center gap-2 mt-2">
+                      {note.is_pinned && (
+                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          📌 Disematkan
+                        </span>
+                      )}
+                      <span className="inline-block bg-teal-50 text-teal-700 border border-teal-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        {note.status || "Online"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
