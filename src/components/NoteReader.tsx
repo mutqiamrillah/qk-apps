@@ -13,6 +13,8 @@ import {
   Moon,
   BookOpen,
   Clock,
+  Copy,
+  Printer,
 } from "lucide-react";
 import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
 
@@ -42,6 +44,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [readingTheme, setReadingTheme] = useState<"light" | "sepia" | "dark">(theme);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [copiedWa, setCopiedWa] = useState(false);
 
   React.useEffect(() => {
     if (theme) {
@@ -52,6 +55,48 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const changeTheme = (newTheme: "light" | "sepia" | "dark") => {
     setReadingTheme(newTheme);
     onThemeChange?.(newTheme);
+  };
+
+  const formatForWhatsApp = (n: NoteItem) => {
+    let text = `*${n.title}*\n`;
+    if (n.speaker) text += `_Pemateri: ${n.speaker}_\n`;
+    if (n.category) text += `_Kategori: ${n.category}_\n`;
+    const dt = formatFullDateTime(n.date, n.created_at);
+    if (dt) text += `_Waktu: ${dt}_\n`;
+    text += `\n`;
+
+    let body = n.content || "";
+    // Clean Arabic tags
+    body = body.replace(/:::arabic\s*([\s\S]*?)\s*:::/g, "$1\n");
+    // Clean alignments
+    body = body.replace(/:::(?:center|right|justify|left)\s*([\s\S]*?)\s*:::/g, "$1");
+    // Markdown headers to bold
+    body = body.replace(/^#+\s*(.*?)$/gm, "*$1*");
+    // Markdown quotes
+    body = body.replace(/^>\s*(.*?)$/gm, "“$1”");
+
+    text += body.trim();
+    text += `\n\n_— Dicatat via QK Notes_ 📖`;
+    return text;
+  };
+
+  const handleCopyWhatsApp = async () => {
+    const text = formatForWhatsApp(note);
+    if (typeof window !== "undefined" && navigator?.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedWa(true);
+        setTimeout(() => setCopiedWa(false), 2200);
+      } catch (err) {
+        console.warn("Clipboard write failed:", err);
+      }
+    }
+  };
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
   };
 
   // Helper untuk parsing inline markdown: **bold**, ==highlight==, *italic*
@@ -325,7 +370,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   return (
     <div className={`min-h-screen flex flex-col pb-24 transition-colors duration-200 ${themeClasses}`}>
       {/* Top Bar */}
-      <div className={`sticky top-0 z-20 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b ${headerBarClasses}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b no-print ${headerBarClasses}`}>
         <button
           onClick={onBack}
           className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition active:scale-95"
@@ -335,6 +380,38 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
+          {/* Salin ke WhatsApp / Telegram Button */}
+          <button
+            onClick={handleCopyWhatsApp}
+            className={`h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition active:scale-95 ${
+              copiedWa
+                ? "bg-emerald-600 text-white"
+                : "bg-black/5 hover:bg-black/10 text-slate-700"
+            }`}
+            title="Salin Rapi untuk WhatsApp / Telegram"
+          >
+            {copiedWa ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tersalin!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Salin WA</span>
+              </>
+            )}
+          </button>
+
+          {/* Cetak / Ekspor PDF Button */}
+          <button
+            onClick={handlePrint}
+            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 text-slate-700 flex items-center justify-center transition active:scale-95"
+            title="Cetak Catatan / Simpan ke PDF"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+
           {/* Pin Button */}
           {onTogglePin && (
             <button
@@ -428,7 +505,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       </div>
 
       {/* Bottom Floating Tools */}
-      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border ${
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border no-print ${
         readingTheme === "dark"
           ? "bg-[#0e342c]/95 border-[#1d5247] text-white"
           : "bg-white/95 border-slate-200 text-slate-800"

@@ -42,3 +42,18 @@ body {
   scrollbar-width: none;
 }
 
+/* Print Friendly & PDF Export Styling */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body, html, main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 12pt !important;
+  }
+  @page {
+    margin: 1.5cm;
+  }
+}
+

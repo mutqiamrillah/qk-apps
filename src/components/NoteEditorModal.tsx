@@ -27,7 +27,78 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"Online" | "Draft">("Online");
 
+  const [savedDraft, setSavedDraft] = useState<{
+    title: string;
+    category: string;
+    speaker: string;
+    episodeNo: string;
+    tagsStr: string;
+    content: string;
+    updatedAt: string;
+  } | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Cek draft tersimpan saat modal dibuka untuk catatan baru
+  useEffect(() => {
+    if (isOpen && !noteToEdit && typeof window !== "undefined") {
+      const draftJson = localStorage.getItem("qk_editor_draft");
+      if (draftJson) {
+        try {
+          const parsed = JSON.parse(draftJson);
+          if (parsed && (parsed.title || parsed.content)) {
+            setSavedDraft(parsed);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    } else {
+      setSavedDraft(null);
+    }
+  }, [isOpen, noteToEdit]);
+
+  // Auto-save draft effect per ketikan (debounced)
+  useEffect(() => {
+    if (!isOpen || noteToEdit) return;
+    if (typeof window === "undefined") return;
+
+    if (title.trim() || content.trim()) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(
+          "qk_editor_draft",
+          JSON.stringify({
+            title,
+            category,
+            speaker,
+            episodeNo,
+            tagsStr,
+            content,
+            updatedAt: new Date().toISOString(),
+          })
+        );
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, noteToEdit, title, category, speaker, episodeNo, tagsStr, content]);
+
+  const handleRestoreDraft = () => {
+    if (!savedDraft) return;
+    setTitle(savedDraft.title || "");
+    setCategory(savedDraft.category || "Lectures");
+    setSpeaker(savedDraft.speaker || "");
+    setEpisodeNo(savedDraft.episodeNo || "");
+    setTagsStr(savedDraft.tagsStr || "");
+    setContent(savedDraft.content || "");
+    setSavedDraft(null);
+  };
+
+  const handleDiscardDraft = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("qk_editor_draft");
+    }
+    setSavedDraft(null);
+  };
 
   useEffect(() => {
     if (noteToEdit) {
@@ -116,6 +187,22 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
     }, 10);
   };
 
+  const handleInsertSymbol = (symbol: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newContent = content.substring(0, start) + symbol + content.substring(end);
+    setContent(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursor = start + symbol.length;
+      textarea.setSelectionRange(newCursor, newCursor);
+    }, 10);
+  };
+
   const handleInsertSnippet = (type: "arabic" | "translation") => {
     let snippet = "";
     if (type === "arabic") {
@@ -148,6 +235,11 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       updated_at: nowIso,
     };
 
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("qk_editor_draft");
+    }
+    setSavedDraft(null);
+
     onSave(updatedNote);
     onClose();
   };
@@ -167,6 +259,37 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Draft Recovery Alert */}
+        {savedDraft && !noteToEdit && (
+          <div className="mx-5 mt-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-center justify-between text-xs animate-in fade-in">
+            <div className="flex items-center gap-2 min-w-0 pr-2">
+              <span className="text-base">📝</span>
+              <span className="truncate">
+                Ada draft otomatis yang belum tersimpan{" "}
+                <span className="opacity-75">
+                  ({new Date(savedDraft.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleRestoreDraft}
+                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[11px] transition active:scale-95 shadow-sm"
+              >
+                Pulihkan
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-2 py-1 hover:bg-amber-100 text-amber-800 rounded-lg text-[11px] transition"
+              >
+                Buang
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
@@ -376,6 +499,49 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 active:scale-95 transition shrink-0"
               >
                 + Terjemahan
+              </button>
+
+              {/* Islamic Shortcut Symbols */}
+              <div className="h-4 w-px bg-slate-200 mx-0.5 shrink-0" />
+              <button
+                type="button"
+                onClick={() => handleInsertSymbol(" ﷺ ")}
+                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                title="Shalallahu 'alaihi wa sallam (ﷺ)"
+              >
+                ﷺ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSymbol(" ﷻ ")}
+                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                title="Jalla Jalaluh (ﷻ)"
+              >
+                ﷻ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSymbol(" ﷸ ")}
+                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                title="Radhiyallahu 'anhu (ﷸ)"
+              >
+                ﷸ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSymbol(" ﷷ ")}
+                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                title="Rahimahullah (ﷷ)"
+              >
+                ﷷ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleInsertSymbol(" ﷽ ")}
+                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                title="Bismillahir Rahmanir Rahim (﷽)"
+              >
+                ﷽
               </button>
             </div>
           </div>

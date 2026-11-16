@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
-import { LogIn, Pin, Clock } from "lucide-react";
+import { LogIn, Pin, Clock, User, Tag } from "lucide-react";
 
 interface RecentNotesProps {
   notes: NoteItem[];
@@ -23,11 +23,35 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
   onLoginClick,
   onTogglePin,
 }) => {
+  const [activeFilter, setActiveFilter] = useState<{
+    type: "all" | "speaker" | "tag";
+    value: string;
+  }>({ type: "all", value: "" });
+
+  // Ekstrak pembicara dan tag unik secara dinamis
+  const speakers = Array.from(
+    new Set(notes.map((n) => n.speaker).filter(Boolean))
+  ) as string[];
+
+  const popularTags = Array.from(
+    new Set(notes.flatMap((n) => n.tags || []).filter(Boolean))
+  ).slice(0, 8);
+
   // Sort notes: pinned notes always at top
   const sortedNotes = [...notes].sort((a, b) => {
     if (a.is_pinned && !b.is_pinned) return -1;
     if (!a.is_pinned && b.is_pinned) return 1;
     return 0;
+  });
+
+  const displayNotes = sortedNotes.filter((note) => {
+    if (activeFilter.type === "speaker") {
+      return note.speaker === activeFilter.value;
+    }
+    if (activeFilter.type === "tag") {
+      return note.tags?.includes(activeFilter.value);
+    }
+    return true;
   });
 
   const sectionTitleClasses = {
@@ -63,9 +87,80 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
         )}
       </div>
 
+      {/* Filter Chips Bar (Semua, Pembicara, Tag) */}
+      {notes.length > 0 && (speakers.length > 0 || popularTags.length > 0) && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-1">
+          <button
+            onClick={() => setActiveFilter({ type: "all", value: "" })}
+            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 shrink-0 ${
+              activeFilter.type === "all"
+                ? "bg-[#134e43] text-white shadow-sm"
+                : theme === "dark"
+                ? "bg-[#0f342d] text-emerald-200 border border-[#1d5247]"
+                : theme === "sepia"
+                ? "bg-[#f3ebd9] text-[#5c462f] border border-[#e2d5bd]"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Semua ({notes.length})
+          </button>
+
+          {speakers.map((spk) => {
+            const isSelected = activeFilter.type === "speaker" && activeFilter.value === spk;
+            return (
+              <button
+                key={spk}
+                onClick={() =>
+                  setActiveFilter(
+                    isSelected ? { type: "all", value: "" } : { type: "speaker", value: spk }
+                  )
+                }
+                className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
+                  isSelected
+                    ? "bg-[#134e43] text-white shadow-sm font-bold"
+                    : theme === "dark"
+                    ? "bg-[#0f342d] text-emerald-200 border border-[#1d5247]"
+                    : theme === "sepia"
+                    ? "bg-[#f3ebd9] text-[#5c462f] border border-[#e2d5bd]"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                <span>👤</span>
+                <span>{spk}</span>
+              </button>
+            );
+          })}
+
+          {popularTags.map((tag) => {
+            const isSelected = activeFilter.type === "tag" && activeFilter.value === tag;
+            return (
+              <button
+                key={tag}
+                onClick={() =>
+                  setActiveFilter(
+                    isSelected ? { type: "all", value: "" } : { type: "tag", value: tag }
+                  )
+                }
+                className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
+                  isSelected
+                    ? "bg-emerald-700 text-white shadow-sm font-bold"
+                    : theme === "dark"
+                    ? "bg-[#0b2923] text-emerald-300 border border-[#194c40]"
+                    : theme === "sepia"
+                    ? "bg-[#efe5d2] text-amber-900 border border-[#dbcbb2]"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                }`}
+              >
+                <span>#{tag}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Note List */}
       <div className="space-y-3">
-        {sortedNotes.length === 0 ? (
+        {displayNotes.length === 0 ? (
           <div className={`text-center py-10 px-4 rounded-3xl border border-dashed ${emptyBoxClasses}`}>
             <span className="text-3xl block mb-2">📖</span>
             {!isLoggedIn ? (
@@ -86,7 +181,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                   </button>
                 )}
               </>
-            ) : (
+            ) : notes.length === 0 ? (
               <>
                 <p className="text-sm font-bold">
                   Belum ada catatan tersimpan
@@ -95,10 +190,19 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                   Tekan tombol + di kanan bawah untuk membuat rangkuman baru.
                 </p>
               </>
+            ) : (
+              <>
+                <p className="text-sm font-bold">
+                  Tidak ada catatan yang cocok
+                </p>
+                <p className="text-xs opacity-60 mt-1">
+                  Coba pilih filter lain atau ketuk &quot;Semua&quot;.
+                </p>
+              </>
             )}
           </div>
         ) : (
-          sortedNotes.map((note) => {
+          displayNotes.map((note) => {
             const formattedDate = formatFullDateTime(note.date, note.created_at);
 
             return (
