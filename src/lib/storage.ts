@@ -60,15 +60,27 @@ export const storageService = {
   getUser: async (): Promise<UserProfile> => {
     if (typeof window === "undefined") return initialUser;
 
+    const localAvatar = localStorage.getItem("qk_saved_avatar") || undefined;
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data: authData } = await supabase.auth.getUser();
         if (authData?.user) {
+          const userSpecificAvatar = localStorage.getItem(`qk_user_avatar_${authData.user.id}`) || undefined;
+          const userMetaAvatar = authData.user.user_metadata?.avatar;
+
           const { data: profile } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", authData.user.id)
             .maybeSingle();
+
+          const resolvedAvatar =
+            profile?.avatar ||
+            userMetaAvatar ||
+            userSpecificAvatar ||
+            localAvatar ||
+            "🤲";
 
           if (profile) {
             const effectiveStreak = getEffectiveStreak(
@@ -76,23 +88,30 @@ export const storageService = {
               profile.last_note_date
             );
 
-            return {
+            const result: UserProfile = {
               id: profile.id,
               email: profile.email || authData.user.email || "",
               name: profile.name || authData.user.user_metadata?.name || "QK",
-              avatar: profile.avatar || authData.user.user_metadata?.avatar || "🤲",
+              avatar: resolvedAvatar,
               streak_days: effectiveStreak,
               notes_count: profile.notes_count ?? 0,
               last_note_date: profile.last_note_date || "",
               is_logged_in: true,
             };
+
+            // Sinkronkan ke cache lokal agar tidak pernah reset
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(result));
+            localStorage.setItem("qk_saved_avatar", resolvedAvatar);
+            localStorage.setItem(`qk_user_avatar_${profile.id}`, resolvedAvatar);
+
+            return result;
           } else {
             // Profile row not found yet -> create it
             const newProfile: UserProfile = {
               id: authData.user.id,
               email: authData.user.email || "",
               name: authData.user.user_metadata?.name || "QK",
-              avatar: authData.user.user_metadata?.avatar || "🤲",
+              avatar: resolvedAvatar,
               streak_days: 0,
               notes_count: 0,
               last_note_date: "",
@@ -102,8 +121,23 @@ export const storageService = {
             return newProfile;
           }
         } else {
-          // User belum login di Supabase
-          return initialUser;
+          // User belum login di Supabase -> check localStorage for guest/local user
+          const local = localStorage.getItem(STORAGE_KEYS.USER);
+          if (local) {
+            try {
+              const parsed = JSON.parse(local);
+              if (localAvatar && (!parsed.avatar || parsed.avatar === "🤲")) {
+                parsed.avatar = localAvatar;
+              }
+              return parsed;
+            } catch {
+              // ignore
+            }
+          }
+          return {
+            ...initialUser,
+            avatar: localAvatar || initialUser.avatar || "🤲",
+          };
         }
       } catch (err) {
         console.warn("Supabase user fetch fallback to local:", err);
@@ -112,10 +146,15 @@ export const storageService = {
 
     const local = localStorage.getItem(STORAGE_KEYS.USER);
     if (!local) {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(initialUser));
-      return initialUser;
+      const defaultUser = {
+        ...initialUser,
+        avatar: localAvatar || initialUser.avatar || "🤲",
+      };
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(defaultUser));
+      return defaultUser;
     }
     const parsed = JSON.parse(local);
+    parsed.avatar = parsed.avatar || localAvatar || "🤲";
     parsed.streak_days = getEffectiveStreak(parsed.streak_days, parsed.last_note_date);
     return parsed;
   },
@@ -123,8 +162,28 @@ export const storageService = {
   saveUser: async (user: UserProfile): Promise<void> => {
     if (typeof window === "undefined") return;
 
+    // Selalu simpan ke localStorage secara instan & persisten
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    if (user.avatar) {
+      localStorage.setItem("qk_saved_avatar", user.avatar);
+      if (user.id) {
+        localStorage.setItem(`qk_user_avatar_${user.id}`, user.avatar);
+      }
+    }
+
     if (isSupabaseConfigured && supabase && user.is_logged_in) {
       try {
+        // 1. Simpan avatar & name langsung ke Supabase Auth User Metadata (kebal schema database)
+        if (user.avatar || user.name) {
+          await supabase.auth.updateUser({
+            data: {
+              ...(user.avatar ? { avatar: user.avatar } : {}),
+              ...(user.name ? { name: user.name } : {}),
+            },
+          }).catch((err) => console.warn("Supabase auth updateUser metadata warning:", err));
+        }
+
+        // 2. Simpan ke tabel profiles
         const payload: Record<string, any> = {
           id: user.id,
           name: user.name,
@@ -150,8 +209,6 @@ export const storageService = {
         console.warn("Supabase save user failed, storing locally:", err);
       }
     }
-
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   },
 
   logoutUser: async (): Promise<void> => {

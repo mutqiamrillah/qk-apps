@@ -18,7 +18,25 @@ import { initialCategories, initialNotes, initialUser } from "@/lib/initialData"
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<NavTab>("home");
   const [theme, setTheme] = useState<AppTheme>("light");
-  const [user, setUser] = useState<UserProfile>(initialUser);
+  const [user, setUser] = useState<UserProfile>(() => {
+    if (typeof window !== "undefined") {
+      const savedAvatar = localStorage.getItem("qk_saved_avatar");
+      const local = localStorage.getItem("qk_user");
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (savedAvatar) parsed.avatar = savedAvatar;
+          return parsed;
+        } catch {
+          // fallback
+        }
+      }
+      if (savedAvatar) {
+        return { ...initialUser, avatar: savedAvatar };
+      }
+    }
+    return initialUser;
+  });
   const [notes, setNotes] = useState<NoteItem[]>(initialNotes);
   const [categories, setCategories] = useState<CategoryItem[]>(initialCategories);
 
@@ -91,7 +109,11 @@ export default function HomePage() {
                 setUser(refreshedUser);
                 setNotes(refreshedNotes);
               } else {
-                setUser(initialUser);
+                const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
+                setUser({
+                  ...initialUser,
+                  avatar: savedAvatar || initialUser.avatar || "🤲",
+                });
                 setNotes([]);
               }
             }
@@ -210,8 +232,12 @@ export default function HomePage() {
   };
 
   const handleLogout = async () => {
+    const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
     await storageService.logoutUser();
-    setUser(initialUser);
+    setUser({
+      ...initialUser,
+      avatar: savedAvatar || initialUser.avatar || "🤲",
+    });
     setNotes([]);
     setActiveTab("home");
   };
@@ -246,6 +272,7 @@ export default function HomePage() {
             onCycleTheme={handleCycleTheme}
             onLogout={handleLogout}
             onLoginClick={() => setActiveTab("profile")}
+            onAvatarClick={() => setActiveTab("profile")}
           />
 
           {/* Main Content by Tab */}

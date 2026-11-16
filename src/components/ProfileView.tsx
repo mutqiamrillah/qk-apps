@@ -53,7 +53,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const handleSelectAvatar = async (emoji: string) => {
     const updated = { ...user, avatar: emoji };
-    onUserChange(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("qk_saved_avatar", emoji);
+      if (user.id) {
+        localStorage.setItem(`qk_user_avatar_${user.id}`, emoji);
+      }
+    }
+    await onUserChange(updated);
     setShowEmojiPicker(false);
   };
 

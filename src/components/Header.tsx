@@ -10,6 +10,7 @@ interface HeaderProps {
   onCycleTheme?: () => void;
   onLogout: () => void;
   onLoginClick?: () => void;
+  onAvatarClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onCycleTheme,
   onLogout,
   onLoginClick,
+  onAvatarClick,
 }) => {
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
@@ -114,12 +116,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Du'a avatar pill */}
-        <div
-          className="w-12 h-12 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105"
-          title="QK Notes Avatar"
+        <button
+          type="button"
+          onClick={onAvatarClick || onLoginClick}
+          className="w-12 h-12 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          title="Klik untuk melihat profil / mengganti avatar"
         >
           {user.avatar || "🤲"}
-        </div>
+        </button>
       </div>
 
       {/* Confirmation Modal */}
