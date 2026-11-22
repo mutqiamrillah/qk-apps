@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   User,
   Mail,
@@ -8,6 +8,7 @@ import {
   LogOut,
   Database,
   Download,
+  Upload,
   CheckCircle2,
   AlertCircle,
   Sparkles,
@@ -21,6 +22,7 @@ interface ProfileViewProps {
   theme?: AppTheme;
   onUserChange: (user: UserProfile) => void;
   onLogout: () => void;
+  onImportNotes?: (importedNotes: NoteItem[]) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -29,7 +31,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   theme = "light",
   onUserChange,
   onLogout,
+  onImportNotes,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importMessage, setImportMessage] = useState<string>("");
   // Auth Tab: 'login' | 'signup'
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -179,7 +184,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   };
 
-  // --- HANDLE BACKUP EXPORT ---
+  // --- HANDLE BACKUP & RESTORE ---
   const handleExportJSON = () => {
     const dataStr =
       "data:text/json;charset=utf-8," +
@@ -190,6 +195,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error("File JSON harus berupa daftar catatan yang valid.");
+        }
+        const validNotes: NoteItem[] = parsed.filter(
+          (item: any) => item && item.id && item.title
+        );
+        if (validNotes.length === 0) {
+          throw new Error("Tidak ada catatan valid yang ditemukan dalam file ini.");
+        }
+        if (onImportNotes) {
+          onImportNotes(validNotes);
+        }
+        setImportMessage(`✅ Berhasil memulihkan ${validNotes.length} catatan!`);
+        setTimeout(() => setImportMessage(""), 4000);
+      } catch (err: any) {
+        setImportMessage(`❌ ${err.message || "Gagal membaca file JSON"}`);
+        setTimeout(() => setImportMessage(""), 4500);
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    };
+    reader.readAsText(file);
   };
 
   const titleTextClasses = {
@@ -474,14 +512,37 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             )}
           </div>
 
-          {/* Backup & Logout Actions */}
+          {/* Backup & Restore & Logout Actions */}
           <div className="space-y-2 pt-2">
+            {importMessage && (
+              <div className="p-3 rounded-2xl bg-slate-100 text-xs font-semibold text-slate-800 animate-in fade-in text-center">
+                {importMessage}
+              </div>
+            )}
+
             <button
               onClick={handleExportJSON}
               className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition"
             >
               <Download className="w-4 h-4 text-slate-500" />
               <span>Cadangkan / Ekspor Catatan (JSON)</span>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportJSON}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95"
+            >
+              <Upload className="w-4 h-4 text-emerald-600" />
+              <span>Pulihkan / Impor Catatan (JSON)</span>
             </button>
 
             <button

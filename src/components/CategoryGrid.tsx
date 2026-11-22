@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, Trash2, Clock } from "lucide-react";
-import { CategoryItem, NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
+import { CategoryItem, NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
 
 interface CategoryGridProps {
   categories: CategoryItem[];
@@ -175,6 +175,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
           ) : (
             filteredNotes.map((note) => {
               const formattedDate = formatFullDateTime(note.date, note.created_at);
+              const readingStats = calculateReadingStats(note.content || "");
 
               return (
                 <div
@@ -200,9 +201,12 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
                     {note.is_pinned ? "📌" : "📖"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold truncate">
-                      {note.title || "Untitled"}
-                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      {note.is_favorite && <span className="text-amber-500 text-xs shrink-0">⭐</span>}
+                      <h3 className="text-sm font-bold truncate">
+                        {note.title || "Untitled"}
+                      </h3>
+                    </div>
                     <p className="text-xs opacity-75 mt-0.5 truncate">
                       {[note.category, note.speaker].filter(Boolean).join(" · ")}
                     </p>
@@ -215,14 +219,17 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       {note.is_pinned && (
                         <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
                           📌 Disematkan
                         </span>
                       )}
                       <span className="inline-block bg-teal-50 text-teal-700 border border-teal-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                        {note.status || "Online"}
+                        {note.status === "Online" ? "Posted" : note.status || "Posted"}
+                      </span>
+                      <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        ⏱️ {readingStats.minutes} mnt
                       </span>
                     </div>
                   </div>

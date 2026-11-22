@@ -149,6 +149,9 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       case "Bold":
         replacement = selected ? `**${selected}**` : `**teks tebal**`;
         break;
+      case "Italic":
+        replacement = selected ? `*${selected}*` : `*teks miring*`;
+        break;
       case "Highlight":
         replacement = selected ? `==${selected}==` : `==teks disorot==`;
         break;
@@ -424,6 +427,14 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => applyFormatting("Italic")}
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold italic rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                title="Format Italic (*teks*)"
+              >
+                Italic
+              </button>
+              <button
+                type="button"
                 onClick={() => applyFormatting("Highlight")}
                 className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
                 title="Format Highlight (==teks==)"
@@ -568,7 +579,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 onChange={(e) => setStatus(e.target.value as any)}
                 className="text-xs px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 font-medium"
               >
-                <option value="Online">Online</option>
+                <option value="Online">Posted</option>
                 <option value="Draft">Draft</option>
               </select>
             </div>

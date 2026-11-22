@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
-import { LogIn, Pin, Clock, User, Tag } from "lucide-react";
+import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
+import { LogIn, Pin, Clock, User, Tag, Star } from "lucide-react";
 
 interface RecentNotesProps {
   notes: NoteItem[];
@@ -12,6 +12,7 @@ interface RecentNotesProps {
   onSeeAllClick?: () => void;
   onLoginClick?: () => void;
   onTogglePin?: (note: NoteItem) => void;
+  onToggleFavorite?: (note: NoteItem) => void;
 }
 
 export const RecentNotes: React.FC<RecentNotesProps> = ({
@@ -22,7 +23,9 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
   onSeeAllClick,
   onLoginClick,
   onTogglePin,
+  onToggleFavorite,
 }) => {
+  const [statusFilter, setStatusFilter] = useState<"all" | "favorite" | "draft" | "archived">("all");
   const [activeFilter, setActiveFilter] = useState<{
     type: "all" | "speaker" | "tag";
     value: string;
@@ -45,6 +48,12 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
   });
 
   const displayNotes = sortedNotes.filter((note) => {
+    // Status filter
+    if (statusFilter === "favorite" && !note.is_favorite) return false;
+    if (statusFilter === "draft" && note.status !== "Draft") return false;
+    if (statusFilter === "archived" && note.status !== "Archived") return false;
+
+    // Speaker / tag filter
     if (activeFilter.type === "speaker") {
       return note.speaker === activeFilter.value;
     }
@@ -87,13 +96,16 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
         )}
       </div>
 
-      {/* Filter Chips Bar (Semua, Pembicara, Tag) */}
-      {notes.length > 0 && (speakers.length > 0 || popularTags.length > 0) && (
+      {/* Filter Chips Bar (Semua, Status, Pembicara, Tag) */}
+      {notes.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 mb-1">
           <button
-            onClick={() => setActiveFilter({ type: "all", value: "" })}
+            onClick={() => {
+              setStatusFilter("all");
+              setActiveFilter({ type: "all", value: "" });
+            }}
             className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 shrink-0 ${
-              activeFilter.type === "all"
+              statusFilter === "all" && activeFilter.type === "all"
                 ? "bg-[#134e43] text-white shadow-sm"
                 : theme === "dark"
                 ? "bg-[#0f342d] text-emerald-200 border border-[#1d5247]"
@@ -104,6 +116,61 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
           >
             Semua ({notes.length})
           </button>
+
+          {/* Quick Filter: Favorit */}
+          <button
+            onClick={() => setStatusFilter(statusFilter === "favorite" ? "all" : "favorite")}
+            className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
+              statusFilter === "favorite"
+                ? "bg-amber-500 text-white shadow-sm font-bold ring-1 ring-amber-300"
+                : theme === "dark"
+                ? "bg-[#0f342d] text-amber-300 border border-[#1d5247]"
+                : theme === "sepia"
+                ? "bg-[#f3ebd9] text-amber-800 border border-[#e2d5bd]"
+                : "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+            }`}
+          >
+            <span>⭐</span>
+            <span>Favorit ({notes.filter((n) => n.is_favorite).length})</span>
+          </button>
+
+          {/* Quick Filter: Draf */}
+          {notes.some((n) => n.status === "Draft") && (
+            <button
+              onClick={() => setStatusFilter(statusFilter === "draft" ? "all" : "draft")}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
+                statusFilter === "draft"
+                  ? "bg-teal-700 text-white shadow-sm font-bold"
+                  : theme === "dark"
+                  ? "bg-[#0f342d] text-teal-300 border border-[#1d5247]"
+                  : theme === "sepia"
+                  ? "bg-[#f3ebd9] text-teal-800 border border-[#e2d5bd]"
+                  : "bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100"
+              }`}
+            >
+              <span>📝</span>
+              <span>Draf ({notes.filter((n) => n.status === "Draft").length})</span>
+            </button>
+          )}
+
+          {/* Quick Filter: Arsip */}
+          {notes.some((n) => n.status === "Archived") && (
+            <button
+              onClick={() => setStatusFilter(statusFilter === "archived" ? "all" : "archived")}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
+                statusFilter === "archived"
+                  ? "bg-slate-700 text-white shadow-sm font-bold"
+                  : theme === "dark"
+                  ? "bg-[#0f342d] text-slate-300 border border-[#1d5247]"
+                  : theme === "sepia"
+                  ? "bg-[#f3ebd9] text-slate-700 border border-[#e2d5bd]"
+                  : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+              }`}
+            >
+              <span>📦</span>
+              <span>Arsip ({notes.filter((n) => n.status === "Archived").length})</span>
+            </button>
+          )}
 
           {speakers.map((spk) => {
             const isSelected = activeFilter.type === "speaker" && activeFilter.value === spk;
@@ -204,6 +271,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
         ) : (
           displayNotes.map((note) => {
             const formattedDate = formatFullDateTime(note.date, note.created_at);
+            const readingStats = calculateReadingStats(note.content || "");
 
             return (
               <div
@@ -231,8 +299,9 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0 pr-6">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 pr-14">
+                  <div className="flex items-center gap-1.5">
+                    {note.is_favorite && <span className="text-amber-500 text-xs shrink-0">⭐</span>}
                     <h3 className="text-sm font-bold truncate">
                       {note.title || "Untitled"}
                     </h3>
@@ -251,14 +320,17 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     {note.is_pinned && (
                       <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
                         📌 Disematkan
                       </span>
                     )}
                     <span className="inline-block bg-teal-50 text-teal-700 border border-teal-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                      {note.status || "Online"}
+                      {note.status === "Online" ? "Posted" : note.status || "Posted"}
+                    </span>
+                    <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                      ⏱️ {readingStats.minutes} mnt
                     </span>
                     {note.tags && note.tags.length > 0 && (
                       <span className="text-[10px] text-emerald-600 font-medium truncate">
@@ -268,23 +340,41 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                   </div>
                 </div>
 
-                {/* Quick Pin Toggle Button */}
-                {onTogglePin && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTogglePin(note);
-                    }}
-                    className={`absolute top-3.5 right-3.5 w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
-                      note.is_pinned
-                        ? "text-amber-600 bg-amber-100 hover:bg-amber-200"
-                        : "opacity-60 group-hover:opacity-100 hover:bg-black/5"
-                    }`}
-                    title={note.is_pinned ? "Lepas Sematan (Unpin)" : "Sematkan Catatan (Pin)"}
-                  >
-                    <Pin className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-amber-500" : ""}`} />
-                  </button>
-                )}
+                {/* Action buttons (Pin & Favorite) */}
+                <div className="absolute top-3.5 right-3.5 flex items-center gap-1">
+                  {onToggleFavorite && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(note);
+                      }}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
+                        note.is_favorite
+                          ? "text-amber-500 bg-amber-100 hover:bg-amber-200"
+                          : "opacity-40 group-hover:opacity-100 hover:bg-black/5"
+                      }`}
+                      title={note.is_favorite ? "Hapus dari Favorit" : "Simpan ke Favorit (⭐)"}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-amber-400 text-amber-500" : ""}`} />
+                    </button>
+                  )}
+                  {onTogglePin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePin(note);
+                      }}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition active:scale-90 ${
+                        note.is_pinned
+                          ? "text-amber-600 bg-amber-100 hover:bg-amber-200"
+                          : "opacity-40 group-hover:opacity-100 hover:bg-black/5"
+                      }`}
+                      title={note.is_pinned ? "Lepas Sematan (Unpin)" : "Sematkan Catatan (Pin)"}
+                    >
+                      <Pin className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-amber-500" : ""}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })

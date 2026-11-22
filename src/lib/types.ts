@@ -1,5 +1,15 @@
 export type AppTheme = "light" | "sepia" | "dark";
 
+export function calculateReadingStats(content: string = ""): { words: number; minutes: number } {
+  const clean = content
+    .replace(/:::[^:]+:::/g, " ")
+    .replace(/[#*=_`>-]/g, " ")
+    .trim();
+  const words = clean ? clean.split(/\s+/).filter(Boolean).length : 0;
+  const minutes = Math.max(1, Math.ceil(words / 180));
+  return { words, minutes };
+}
+
 export function formatFullDateTime(dateStr?: string, created_at?: string): string {
   const candidate = created_at || dateStr;
   if (!candidate) return "";

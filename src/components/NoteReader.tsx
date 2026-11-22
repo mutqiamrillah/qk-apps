@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChevronLeft,
   Trash2,
@@ -15,8 +15,12 @@ import {
   Clock,
   Copy,
   Printer,
+  Star,
+  List,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-import { NoteItem, AppTheme, formatFullDateTime } from "@/lib/types";
+import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
 
 interface NoteReaderProps {
   note: NoteItem;
@@ -26,6 +30,7 @@ interface NoteReaderProps {
   onDelete: (id: string) => void;
   onEdit: (note: NoteItem) => void;
   onTogglePin?: (note: NoteItem) => void;
+  onToggleFavorite?: (note: NoteItem) => void;
   onOpenShare?: (note: NoteItem) => void;
 }
 
@@ -37,6 +42,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   onDelete,
   onEdit,
   onTogglePin,
+  onToggleFavorite,
   onOpenShare,
 }) => {
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xl">("normal");
@@ -45,6 +51,44 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
+  const [murajaahMode, setMurajaahMode] = useState(false);
+  const [revealedQuotes, setRevealedQuotes] = useState<Record<number, boolean>>({});
+  const [showToc, setShowToc] = useState(false);
+
+  // Kalkulasi statistik waktu baca & kata
+  const readingStats = useMemo(() => {
+    return calculateReadingStats(note.content || "");
+  }, [note.content]);
+
+  // Ekstrak heading untuk Table of Contents
+  const headings = useMemo(() => {
+    const lines = (note.content || "").split("\n");
+    const list: { id: string; text: string; level: number }[] = [];
+    let hIdx = 0;
+    lines.forEach((l) => {
+      const trimmed = l.trim();
+      if (trimmed.startsWith("# ")) {
+        list.push({
+          id: `heading-${hIdx++}`,
+          text: trimmed.replace("# ", "").replace(/[*_#=]/g, ""),
+          level: 1,
+        });
+      } else if (trimmed.startsWith("## ")) {
+        list.push({
+          id: `heading-${hIdx++}`,
+          text: trimmed.replace("## ", "").replace(/[*_#=]/g, ""),
+          level: 2,
+        });
+      } else if (trimmed.startsWith("### ")) {
+        list.push({
+          id: `heading-${hIdx++}`,
+          text: trimmed.replace("### ", "").replace(/[*_#=]/g, ""),
+          level: 3,
+        });
+      }
+    });
+    return list;
+  }, [note.content]);
 
   React.useEffect(() => {
     if (theme) {
@@ -143,6 +187,14 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
   // Parse formatting rich blocks: Arabic, alignments, headings, quotes, bullets, numbered
   const renderFormattedContent = (content: string) => {
+    let headingCounter = 0;
+    const regularTextSizeClass =
+      fontSizeLevel === "normal"
+        ? "text-sm"
+        : fontSizeLevel === "large"
+        ? "text-base"
+        : "text-lg";
+
     const parts = content.split(/(:::(?:arabic|center|right|justify|left)[\s\S]*?:::)/g);
 
     return parts.map((part, index) => {
@@ -180,7 +232,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       if (part.startsWith(":::center")) {
         const text = part.replace(/:::center/g, "").replace(/:::/g, "").trim();
         return (
-          <div key={index} className="my-3 text-center leading-relaxed font-medium">
+          <div key={index} className={`my-3 text-center leading-relaxed font-medium ${regularTextSizeClass}`}>
             {renderInline(text)}
           </div>
         );
@@ -190,7 +242,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       if (part.startsWith(":::right")) {
         const text = part.replace(/:::right/g, "").replace(/:::/g, "").trim();
         return (
-          <div key={index} className="my-3 text-right leading-relaxed">
+          <div key={index} className={`my-3 text-right leading-relaxed ${regularTextSizeClass}`}>
             {renderInline(text)}
           </div>
         );
@@ -200,7 +252,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       if (part.startsWith(":::justify")) {
         const text = part.replace(/:::justify/g, "").replace(/:::/g, "").trim();
         return (
-          <div key={index} className="my-3 text-justify leading-relaxed">
+          <div key={index} className={`my-3 text-justify leading-relaxed ${regularTextSizeClass}`}>
             {renderInline(text)}
           </div>
         );
@@ -210,7 +262,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       if (part.startsWith(":::left")) {
         const text = part.replace(/:::left/g, "").replace(/:::/g, "").trim();
         return (
-          <div key={index} className="my-3 text-left leading-relaxed">
+          <div key={index} className={`my-3 text-left leading-relaxed ${regularTextSizeClass}`}>
             {renderInline(text)}
           </div>
         );
@@ -226,10 +278,12 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
             // Title (# )
             if (trimmed.startsWith("# ")) {
+              const hId = `heading-${headingCounter++}`;
               return (
                 <h1
+                  id={hId}
                   key={lIdx}
-                  className={`font-black mt-6 mb-3 tracking-tight ${
+                  className={`font-black mt-6 mb-3 tracking-tight scroll-mt-20 ${
                     readingTheme === "dark" ? "text-white" : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
@@ -246,10 +300,12 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
             // Heading (## )
             if (trimmed.startsWith("## ")) {
+              const hId = `heading-${headingCounter++}`;
               return (
                 <h2
+                  id={hId}
                   key={lIdx}
-                  className={`font-bold mt-5 mb-2 ${
+                  className={`font-bold mt-5 mb-2 scroll-mt-20 ${
                     readingTheme === "dark" ? "text-emerald-200" : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
@@ -266,10 +322,12 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
             // Subheading (### )
             if (trimmed.startsWith("### ")) {
+              const hId = `heading-${headingCounter++}`;
               return (
                 <h3
+                  id={hId}
                   key={lIdx}
-                  className={`font-bold mt-4 mb-1.5 ${
+                  className={`font-bold mt-4 mb-1.5 scroll-mt-20 ${
                     readingTheme === "dark" ? "text-emerald-300" : "text-slate-800"
                   } ${
                     fontSizeLevel === "normal"
@@ -284,40 +342,74 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               );
             }
 
-            // Quote (> )
+            // Quote (> ) dengan Mode Muraja'ah / Flashcard Dalil
             if (trimmed.startsWith("> ")) {
+              const quoteText = trimmed.replace("> ", "");
+              const isRevealed = !!revealedQuotes[lIdx];
+
+              if (murajaahMode && !isRevealed) {
+                return (
+                  <div
+                    key={lIdx}
+                    onClick={() => setRevealedQuotes((prev) => ({ ...prev, [lIdx]: true }))}
+                    className={`my-3 p-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 ${
+                      readingTheme === "dark"
+                        ? "border-amber-500/50 bg-amber-950/30 text-amber-200"
+                        : "border-amber-400 bg-amber-50 text-amber-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <span className="text-base">🧠</span>
+                      <span>Uji Hafalan: Dalil / Terjemahan disembunyikan</span>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-200 text-amber-950 shrink-0">
+                      Buka Jawaban 👁️
+                    </span>
+                  </div>
+                );
+              }
+
               return (
-                <blockquote
-                  key={lIdx}
-                  className={`border-l-4 my-2 pl-3.5 py-1.5 rounded-r-xl italic leading-relaxed ${
-                    readingTheme === "dark"
-                      ? "border-amber-500 bg-amber-950/20 text-slate-200"
-                      : "border-amber-400 bg-amber-50/40 text-slate-700"
-                  }`}
-                >
-                  {renderInline(trimmed.replace("> ", ""))}
-                </blockquote>
+                <div key={lIdx} className="relative group/quote my-2">
+                  <blockquote
+                    className={`border-l-4 pl-3.5 py-1.5 rounded-r-xl italic leading-relaxed ${regularTextSizeClass} ${
+                      readingTheme === "dark"
+                        ? "border-amber-500 bg-amber-950/20 text-slate-200"
+                        : "border-amber-400 bg-amber-50/40 text-slate-700"
+                    }`}
+                  >
+                    {renderInline(quoteText)}
+                  </blockquote>
+                  {murajaahMode && (
+                    <button
+                      onClick={() => setRevealedQuotes((prev) => ({ ...prev, [lIdx]: false }))}
+                      className="text-[10px] text-amber-600 hover:underline font-semibold ml-4 mt-1 block"
+                    >
+                      Tutup kembali 🙈
+                    </button>
+                  )}
+                </div>
               );
             }
 
-            // Bullets (- or • )
+            // Bullets (- or • ) disamakan font size dengan teks reguler
             if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
               return (
-                <div key={lIdx} className="flex items-start gap-2.5 ml-2 leading-relaxed">
-                  <span className="text-emerald-500 font-bold select-none">•</span>
+                <div key={lIdx} className={`flex items-start gap-2.5 ml-2 leading-relaxed ${regularTextSizeClass}`}>
+                  <span className="text-emerald-500 font-bold select-none shrink-0">•</span>
                   <span>{renderInline(trimmed.replace(/^[-•]\s*/, ""))}</span>
                 </div>
               );
             }
 
-            // Numbered (1. , 2. )
+            // Numbered (1. , 2. ) disamakan font size dengan teks reguler
             if (/^\d+\.\s/.test(trimmed)) {
               const numMatch = trimmed.match(/^(\d+\.)\s/);
               const numPrefix = numMatch ? numMatch[1] : "";
               const textContent = trimmed.replace(/^\d+\.\s/, "");
               return (
-                <div key={lIdx} className="flex items-start gap-2 ml-2 leading-relaxed">
-                  <span className="font-semibold text-emerald-500 select-none min-w-[1.2rem]">{numPrefix}</span>
+                <div key={lIdx} className={`flex items-start gap-2 ml-2 leading-relaxed ${regularTextSizeClass}`}>
+                  <span className="font-semibold text-emerald-500 select-none min-w-[1.2rem] shrink-0">{numPrefix}</span>
                   <span>{renderInline(textContent)}</span>
                 </div>
               );
@@ -327,13 +419,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             return (
               <p
                 key={lIdx}
-                className={`leading-relaxed ${
-                  fontSizeLevel === "normal"
-                    ? "text-sm"
-                    : fontSizeLevel === "large"
-                    ? "text-base"
-                    : "text-lg"
-                }`}
+                className={`leading-relaxed ${regularTextSizeClass}`}
               >
                 {renderInline(line)}
               </p>
@@ -412,6 +498,50 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             <Printer className="w-4 h-4" />
           </button>
 
+          {/* Favorite Star Button */}
+          {onToggleFavorite && (
+            <button
+              onClick={() => onToggleFavorite(note)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition active:scale-95 ${
+                note.is_favorite
+                  ? "bg-amber-100 text-amber-600 border border-amber-300 shadow-sm"
+                  : "bg-black/5 hover:bg-black/10 text-slate-600"
+              }`}
+              title={note.is_favorite ? "Hapus dari Favorit" : "Simpan ke Catatan Favorit (⭐)"}
+            >
+              <Star className={`w-4 h-4 ${note.is_favorite ? "fill-amber-500 text-amber-500" : ""}`} />
+            </button>
+          )}
+
+          {/* Mode Muraja'ah / Flashcard Button */}
+          <button
+            onClick={() => setMurajaahMode(!murajaahMode)}
+            className={`h-9 px-2.5 rounded-xl flex items-center gap-1 text-xs font-semibold transition active:scale-95 ${
+              murajaahMode
+                ? "bg-amber-500 text-white shadow-sm ring-2 ring-amber-300"
+                : "bg-black/5 hover:bg-black/10 text-slate-700"
+            }`}
+            title={murajaahMode ? "Matikan Mode Muraja'ah" : "Mode Muraja'ah (Sembunyikan Dalil/Terjemahan untuk Uji Hafalan)"}
+          >
+            <span className="text-sm">🧠</span>
+            <span className="hidden sm:inline">Muraja&apos;ah</span>
+          </button>
+
+          {/* Table of Contents Button (hanya jika ada heading) */}
+          {headings.length > 0 && (
+            <button
+              onClick={() => setShowToc(!showToc)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition active:scale-95 ${
+                showToc
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-black/5 hover:bg-black/10 text-slate-700"
+              }`}
+              title="Daftar Isi (Table of Contents)"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Pin Button */}
           {onTogglePin && (
             <button
@@ -482,11 +612,67 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           </div>
         )}
 
-        {/* Full timestamp with seconds precision */}
-        {formatFullDateTime(note.date, note.created_at) && (
-          <div className="flex items-center gap-1.5 mt-2.5 text-xs opacity-70 font-mono">
-            <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>{formatFullDateTime(note.date, note.created_at)}</span>
+        {/* Timestamp with seconds precision & Reading Stats */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-xs opacity-70 font-mono">
+          {formatFullDateTime(note.date, note.created_at) && (
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>{formatFullDateTime(note.date, note.created_at)}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold">
+            <span>⏱️ {readingStats.minutes} mnt baca</span>
+            <span>·</span>
+            <span>{readingStats.words} kata</span>
+          </div>
+        </div>
+
+        {/* Table of Contents Box */}
+        {showToc && headings.length > 0 && (
+          <div
+            className={`my-4 p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2 ${
+              readingTheme === "dark"
+                ? "bg-[#0b2721] border-[#1a4e42]"
+                : readingTheme === "sepia"
+                ? "bg-[#f3ebd9] border-[#e2d5bd]"
+                : "bg-emerald-50/60 border-emerald-200/70"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-black/5 dark:border-white/5">
+              <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                <span>📑</span> Daftar Isi ({headings.length})
+              </span>
+              <button
+                onClick={() => setShowToc(false)}
+                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white"
+              >
+                Tutup ✕
+              </button>
+            </div>
+            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+              {headings.map((h) => (
+                <button
+                  key={h.id}
+                  onClick={() => {
+                    const el = document.getElementById(h.id);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setShowToc(false);
+                    }
+                  }}
+                  className={`w-full text-left text-xs py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition truncate block ${
+                    h.level === 1
+                      ? "font-bold text-emerald-800 dark:text-emerald-200"
+                      : h.level === 2
+                      ? "pl-4 font-medium text-slate-800 dark:text-slate-200"
+                      : "pl-6 text-slate-600 dark:text-slate-400"
+                  }`}
+                >
+                  {h.level === 1 ? "• " : h.level === 2 ? "↳ " : "– "}
+                  {h.text}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

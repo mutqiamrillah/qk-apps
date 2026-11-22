@@ -153,6 +153,29 @@ export default function HomePage() {
     await handleSaveNote(updatedNote);
   };
 
+  const handleToggleFavorite = async (note: NoteItem) => {
+    const updatedNote: NoteItem = {
+      ...note,
+      is_favorite: !note.is_favorite,
+    };
+    await handleSaveNote(updatedNote);
+  };
+
+  const handleImportNotes = async (importedNotes: NoteItem[]) => {
+    try {
+      for (const item of importedNotes) {
+        await storageService.saveNote(item);
+      }
+      const refreshedNotes = await storageService.getNotes();
+      setNotes(refreshedNotes);
+      const updatedUser = { ...user, notes_count: refreshedNotes.length };
+      setUser(updatedUser);
+      await storageService.saveUser(updatedUser);
+    } catch (err) {
+      console.error("Gagal mengimpor catatan:", err);
+    }
+  };
+
   const handleOpenShare = (note: NoteItem) => {
     setShareNote(note);
     setIsShareOpen(true);
@@ -260,6 +283,7 @@ export default function HomePage() {
           onDelete={handleDeleteNote}
           onEdit={handleEditNote}
           onTogglePin={handleTogglePin}
+          onToggleFavorite={handleToggleFavorite}
           onOpenShare={handleOpenShare}
         />
       ) : (
@@ -291,6 +315,7 @@ export default function HomePage() {
                   onSeeAllClick={() => setActiveTab("study")}
                   onLoginClick={() => setActiveTab("profile")}
                   onTogglePin={handleTogglePin}
+                  onToggleFavorite={handleToggleFavorite}
                 />
               </>
             )}
@@ -339,6 +364,7 @@ export default function HomePage() {
                     onSelectNote={handleSelectNote}
                     onLoginClick={() => setActiveTab("profile")}
                     onTogglePin={handleTogglePin}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                 </div>
               </div>
@@ -351,6 +377,7 @@ export default function HomePage() {
                 theme={theme}
                 onUserChange={handleUpdateUser}
                 onLogout={handleLogout}
+                onImportNotes={handleImportNotes}
               />
             )}
           </main>
