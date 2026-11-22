@@ -102,11 +102,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               is_logged_in: true,
             };
             onUserChange(newUser);
-            setAuthSuccess("Pendaftaran berhasil dan Anda sudah masuk!");
+            setAuthSuccess("Account created! Welcome.");
           } else if (data.user) {
             // Jika konfirmasi email aktif di Supabase
             setAuthSuccess(
-              "Pendaftaran berhasil! Akun telah dibuat. Silakan periksa inbox email Anda untuk konfirmasi, lalu masuk via tab Login."
+              "Account created! Please check your email inbox to confirm, then sign in."
             );
             setAuthMode("login");
           }
@@ -136,7 +136,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               is_logged_in: true,
             };
             onUserChange(authedUser);
-            setAuthSuccess("Berhasil masuk!");
+            setAuthSuccess("Signed in successfully!");
           }
         }
       } else {
@@ -151,10 +151,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           is_logged_in: true,
         };
         onUserChange(localUser);
-        setAuthSuccess("Berhasil masuk dalam mode lokal!");
+        setAuthSuccess("Signed in successfully!");
       }
     } catch (err: any) {
-      setAuthError(err.message || "Gagal memproses autentikasi");
+      setAuthError(err.message || "Authentication failed. Please try again.");
     } finally {
       setAuthLoading(false);
     }
@@ -207,21 +207,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         const text = event.target?.result as string;
         const parsed = JSON.parse(text);
         if (!Array.isArray(parsed)) {
-          throw new Error("File JSON harus berupa daftar catatan yang valid.");
+          throw new Error("Invalid backup file format.");
         }
         const validNotes: NoteItem[] = parsed.filter(
           (item: any) => item && item.id && item.title
         );
         if (validNotes.length === 0) {
-          throw new Error("Tidak ada catatan valid yang ditemukan dalam file ini.");
+          throw new Error("No valid notes found in this file.");
         }
         if (onImportNotes) {
           onImportNotes(validNotes);
         }
-        setImportMessage(`✅ Berhasil memulihkan ${validNotes.length} catatan!`);
+        setImportMessage(`✅ Successfully imported ${validNotes.length} notes!`);
         setTimeout(() => setImportMessage(""), 4000);
       } catch (err: any) {
-        setImportMessage(`❌ ${err.message || "Gagal membaca file JSON"}`);
+        setImportMessage(`❌ ${err.message || "Failed to read backup file"}`);
         setTimeout(() => setImportMessage(""), 4500);
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -255,10 +255,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               🤲
             </div>
             <h2 className="text-lg font-bold text-slate-900">
-              Akun QK Notes
+              Account
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Daftar atau masuk agar seluruh catatan dan streak tersimpan aman di database cloud.
+              Sign in or create an account to keep your notes and streak safely synced.
             </p>
           </div>
 
@@ -276,7 +276,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Masuk (Login)
+              Sign In
             </button>
             <button
               onClick={() => {
@@ -290,7 +290,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Daftar Baru (Sign Up)
+              Sign Up
             </button>
           </div>
 
@@ -314,7 +314,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {authMode === "signup" && (
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nama Lengkap / Panggilan
+                  Full Name
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -323,7 +323,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Contoh: QK"
+                    placeholder="e.g. QK"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                 </div>
@@ -341,7 +341,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@email.com"
+                  placeholder="name@example.com"
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
@@ -359,7 +359,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimal 6 karakter"
+                  placeholder="At least 6 characters"
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
@@ -371,11 +371,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full py-3 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold transition shadow-md disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
             >
               {authLoading ? (
-                <span>Memproses...</span>
+                <span>Processing...</span>
               ) : authMode === "signup" ? (
-                <span>Daftar & Simpan ke Database</span>
+                <span>Create Account</span>
               ) : (
-                <span>Masuk Sekarang</span>
+                <span>Sign In</span>
               )}
             </button>
           </form>
@@ -401,7 +401,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className="w-20 h-20 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-4xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer relative group"
-                title="Klik untuk mengganti avatar emoji"
+                title="Click to choose avatar"
               >
                 <span>{user.avatar || "🤲"}</span>
                 <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white text-slate-700 shadow-sm border border-slate-200 flex items-center justify-center text-xs group-hover:bg-emerald-50">
@@ -415,14 +415,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="mb-5 p-4 bg-white rounded-2xl border border-slate-200 shadow-md animate-in fade-in zoom-in-95">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-xs font-bold text-slate-800">
-                    Pilih Avatar Emoji
+                    Choose Avatar
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowEmojiPicker(false)}
                     className="text-xs text-slate-400 hover:text-slate-600"
                   >
-                    Tutup
+                    Close
                   </button>
                 </div>
                 <div className="grid grid-cols-6 gap-2">
@@ -448,7 +448,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <p className="text-xs opacity-70 mb-1">{user.email}</p>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mt-2">
               <Sparkles className="w-3 h-3" />
-              <span>Tersimpan di Cloud Database</span>
+              <span>Synced & Saved</span>
             </div>
 
             {/* Stats Counter */}
@@ -464,7 +464,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {user.streak_days}
                 </div>
                 <div className="text-[11px] opacity-70 font-medium">
-                  Hari Streak
+                  Day Streak
                 </div>
               </div>
 
@@ -479,16 +479,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {notes.length}
                 </div>
                 <div className="text-[11px] opacity-70 font-medium">
-                  Total Catatan
+                  Total Notes
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Ubah Nama Profil */}
+          {/* Display Name Edit Card */}
           <div className={`rounded-3xl p-5 border ${cardBaseClasses}`}>
             <h3 className="text-xs font-bold text-slate-700 mb-2">
-              Ubah Nama Panggilan
+              Display Name
             </h3>
             <form onSubmit={handleSaveName} className="flex gap-2">
               <input
@@ -502,12 +502,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 disabled={nameSaving}
                 className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition"
               >
-                {nameSaving ? "..." : "Simpan"}
+                {nameSaving ? "..." : "Save"}
               </button>
             </form>
             {nameSaveSuccess && (
               <p className="text-[11px] text-emerald-600 mt-2 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Nama berhasil diperbarui di database!
+                <CheckCircle2 className="w-3.5 h-3.5" /> Name updated successfully!
               </p>
             )}
           </div>
@@ -525,7 +525,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition"
             >
               <Download className="w-4 h-4 text-slate-500" />
-              <span>Cadangkan / Ekspor Catatan (JSON)</span>
+              <span>Export Notes (Backup JSON)</span>
             </button>
 
             <input
@@ -542,7 +542,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95"
             >
               <Upload className="w-4 h-4 text-emerald-600" />
-              <span>Pulihkan / Impor Catatan (JSON)</span>
+              <span>Import Notes (Restore JSON)</span>
             </button>
 
             <button
@@ -550,7 +550,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="w-full py-3 px-4 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center justify-center gap-2 transition"
             >
               <LogOut className="w-4 h-4" />
-              <span>Keluar dari Akun (Logout)</span>
+              <span>Sign Out</span>
             </button>
           </div>
         </div>

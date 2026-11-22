@@ -11,9 +11,11 @@ import { BottomNav, NavTab } from "@/components/BottomNav";
 import { SearchModal } from "@/components/SearchModal";
 import { ProfileView } from "@/components/ProfileView";
 import { ShareQuoteModal } from "@/components/ShareQuoteModal";
-import { storageService, calculateStreakOnNewNote } from "@/lib/storage";
+import { DailyWisdomModal } from "@/components/DailyWisdomModal";
+import { storageService, calculateStreakOnNewNote, calculateStreakFromNotes, toLocalDateString } from "@/lib/storage";
 import { CategoryItem, NoteItem, UserProfile, AppTheme } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
+import { DailyWisdom, getRandomDailyWisdom } from "@/lib/dailyWisdom";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<NavTab>("home");
@@ -49,6 +51,42 @@ export default function HomePage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareNote, setShareNote] = useState<NoteItem | null>(null);
+
+  // Daily Wisdom (Nasihat Al-Qur'an & Hadits harian)
+  const [dailyWisdom, setDailyWisdom] = useState<DailyWisdom | null>(null);
+  const [isDailyWisdomOpen, setIsDailyWisdomOpen] = useState(false);
+
+  // Munculkan nasihat secara otomatis ketika pertama kali membuka aplikasi di hari tersebut
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const today = toLocalDateString(new Date());
+      const lastSeen = localStorage.getItem("qk_last_daily_wisdom_date");
+
+      const wisdom = getRandomDailyWisdom(today);
+      setDailyWisdom(wisdom);
+
+      // Hanya auto-popup jika belum pernah dibuka pada hari ini
+      if (lastSeen !== today) {
+        setIsDailyWisdomOpen(true);
+      }
+    }
+  }, []);
+
+  const handleCloseDailyWisdom = () => {
+    setIsDailyWisdomOpen(false);
+    if (typeof window !== "undefined") {
+      const today = toLocalDateString(new Date());
+      localStorage.setItem("qk_last_daily_wisdom_date", today);
+    }
+  };
+
+  const handleOpenDailyWisdomManually = () => {
+    if (!dailyWisdom) {
+      const today = toLocalDateString(new Date());
+      setDailyWisdom(getRandomDailyWisdom(today));
+    }
+    setIsDailyWisdomOpen(true);
+  };
 
   // Category filter state in Study tab
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
@@ -88,6 +126,17 @@ export default function HomePage() {
           storageService.getNotes(),
           storageService.getCategories(),
         ]);
+
+        // Rekonsiliasi streak dari catatan aktual agar bebas dari distorsi timezone UTC server
+        if (loadedNotes && loadedNotes.length > 0) {
+          const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(loadedNotes);
+          if (calculatedStreak > 0 && calculatedStreak !== loadedUser.streak_days) {
+            loadedUser.streak_days = calculatedStreak;
+            if (lastDate) loadedUser.last_note_date = lastDate;
+            await storageService.saveUser(loadedUser);
+          }
+        }
+
         setUser(loadedUser);
         setNotes(loadedNotes);
         setCategories(loadedCategories);
@@ -168,7 +217,14 @@ export default function HomePage() {
       }
       const refreshedNotes = await storageService.getNotes();
       setNotes(refreshedNotes);
-      const updatedUser = { ...user, notes_count: refreshedNotes.length };
+
+      const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(refreshedNotes);
+      const updatedUser = {
+        ...user,
+        streak_days: calculatedStreak > 0 ? calculatedStreak : user.streak_days,
+        last_note_date: lastDate || user.last_note_date,
+        notes_count: refreshedNotes.length,
+      };
       setUser(updatedUser);
       await storageService.saveUser(updatedUser);
     } catch (err) {
@@ -193,15 +249,22 @@ export default function HomePage() {
     const updatedNotes = await storageService.getNotes();
     setNotes(updatedNotes);
 
-    // Kalkulasi streak: hanya bertambah jika user membuat catatan baru setiap hari
+    // Hitung streak dari riwayat catatan aktual (bebas dari distorsi timezone UTC server)
+    const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(updatedNotes);
+
     let updatedUser = { ...user };
     if (isNewNote) {
-      const { newStreak, newDate } = calculateStreakOnNewNote(
-        user.streak_days,
-        user.last_note_date
-      );
-      updatedUser.streak_days = newStreak;
-      updatedUser.last_note_date = newDate;
+      if (calculatedStreak > 0) {
+        updatedUser.streak_days = calculatedStreak;
+        if (lastDate) updatedUser.last_note_date = lastDate;
+      } else {
+        const { newStreak, newDate } = calculateStreakOnNewNote(
+          user.streak_days,
+          user.last_note_date
+        );
+        updatedUser.streak_days = newStreak;
+        updatedUser.last_note_date = newDate;
+      }
     }
     updatedUser.notes_count = updatedNotes.length;
 
@@ -215,7 +278,13 @@ export default function HomePage() {
     setNotes(updatedNotes);
     setActiveNote(null);
 
-    const updatedUser = { ...user, notes_count: updatedNotes.length };
+    const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(updatedNotes);
+    const updatedUser = {
+      ...user,
+      streak_days: calculatedStreak,
+      last_note_date: lastDate || user.last_note_date,
+      notes_count: updatedNotes.length,
+    };
     setUser(updatedUser);
     await storageService.saveUser(updatedUser);
   };
@@ -294,6 +363,7 @@ export default function HomePage() {
             user={user}
             theme={theme}
             onCycleTheme={handleCycleTheme}
+            onOpenDailyWisdom={handleOpenDailyWisdomManually}
             onLogout={handleLogout}
             onLoginClick={() => setActiveTab("profile")}
             onAvatarClick={() => setActiveTab("profile")}
@@ -420,6 +490,15 @@ export default function HomePage() {
           setIsShareOpen(false);
           setShareNote(null);
         }}
+      />
+
+      {/* Pop-up Nasihat Harian Otomatis saat Pertama Buka Hari Ini */}
+      <DailyWisdomModal
+        isOpen={isDailyWisdomOpen}
+        wisdom={dailyWisdom}
+        theme={theme}
+        onClose={handleCloseDailyWisdom}
+        onRefresh={(newW) => setDailyWisdom(newW)}
       />
     </div>
   );

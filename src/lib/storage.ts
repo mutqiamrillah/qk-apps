@@ -8,33 +8,83 @@ const STORAGE_KEYS = {
   CATEGORIES: "qk_categories_list",
 };
 
+// --- LOCAL DATE & TIMEZONE HELPERS ---
+
+/**
+ * Mengonversi objek Date atau string timestamp ke format YYYY-MM-DD dalam timezone lokal pengguna.
+ * Menghilangkan bug pergeseran tanggal akibat konversi ISO UTC server.
+ */
+export function toLocalDateString(val?: string | Date): string {
+  if (!val) return "";
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return "";
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, "0");
+    const d = String(val.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  // Jika sudah berformat YYYY-MM-DD murni
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    return val;
+  }
+  // Jika berupa format ISO timestamp (misal: 2026-11-22T15:30:00Z)
+  const parsed = new Date(val);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return "";
+}
+
+/**
+ * Menghitung selisih hari kalender murni (date1 - date2) tanpa distorsi timezone atau jam.
+ */
+export function diffInDays(dateStr1: string, dateStr2: string): number {
+  if (!dateStr1 || !dateStr2) return 0;
+  const [y1, m1, d1] = dateStr1.split("-").map(Number);
+  const [y2, m2, d2] = dateStr2.split("-").map(Number);
+  if (!y1 || !m1 || !d1 || !y2 || !m2 || !d2) return 0;
+
+  const utc1 = Date.UTC(y1, m1 - 1, d1);
+  const utc2 = Date.UTC(y2, m2 - 1, d2);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.round((utc1 - utc2) / msPerDay);
+}
+
 // --- STREAK CALCULATION LOGIC ---
+
 export function calculateStreakOnNewNote(
   currentStreak: number,
   lastNoteDate?: string
 ): { newStreak: number; newDate: string } {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const today = toLocalDateString(new Date());
 
   if (!lastNoteDate) {
-    // First ever note created -> streak starts at 1
+    // Catatan pertama -> streak mulai dari 1
     return { newStreak: 1, newDate: today };
   }
 
-  if (lastNoteDate === today) {
-    // Note created today already -> maintain current streak (don't increment twice in same day)
+  const last = toLocalDateString(lastNoteDate);
+  if (!last) {
+    return { newStreak: 1, newDate: today };
+  }
+
+  const diff = diffInDays(today, last);
+
+  if (diff === 0) {
+    // Note dibuat di hari lokal yang sama -> pertahankan streak aktif
+    return { newStreak: Math.max(1, currentStreak), newDate: today };
+  } else if (diff === 1) {
+    // Hari berurutan (kemarin -> hari ini) -> tambah streak!
+    return { newStreak: (currentStreak || 0) + 1, newDate: today };
+  } else if (diff < 0) {
+    // Antisipasi jika jam lokal pengguna sempat maju
     return { newStreak: Math.max(1, currentStreak), newDate: today };
   }
 
-  const yesterdayDate = new Date();
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterday = yesterdayDate.toISOString().split("T")[0];
-
-  if (lastNoteDate === yesterday) {
-    // Consecutive day -> increment streak!
-    return { newStreak: (currentStreak || 0) + 1, newDate: today };
-  }
-
-  // Missed one or more days -> streak resets to 1
+  // Terlewat 2 hari atau lebih -> reset ke 1
   return { newStreak: 1, newDate: today };
 }
 
@@ -43,16 +93,81 @@ export function getEffectiveStreak(
   lastNoteDate?: string
 ): number {
   if (!lastNoteDate || currentStreak <= 0) return 0;
-  const today = new Date().toISOString().split("T")[0];
-  const yesterdayDate = new Date();
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterday = yesterdayDate.toISOString().split("T")[0];
 
-  if (lastNoteDate === today || lastNoteDate === yesterday) {
+  const today = toLocalDateString(new Date());
+  const last = toLocalDateString(lastNoteDate);
+  if (!last) return 0;
+
+  const diff = diffInDays(today, last);
+
+  // Jika catatan terakhir dibuat hari ini (0) atau kemarin (1), streak masih terjaga!
+  if (diff === 0 || diff === 1) {
     return currentStreak;
   }
-  // Streak broken
+
+  // Jika sudah lewat 2 hari atau lebih tanpa catatan baru, streak hangus
   return 0;
+}
+
+/**
+ * Menghitung streak aktual secara deterministik dari riwayat catatan pengguna.
+ * Menjamin streak tidak pernah salah hitung meski ada perbedaan timezone server / client.
+ */
+export function calculateStreakFromNotes(notes: NoteItem[]): {
+  streak: number;
+  lastDate?: string;
+} {
+  if (!notes || notes.length === 0) {
+    return { streak: 0 };
+  }
+
+  // Kumpulkan semua tanggal lokal unik dari catatan
+  const dateSet = new Set<string>();
+  for (const n of notes) {
+    const raw = n.created_at || n.date;
+    const localDate = toLocalDateString(raw);
+    if (localDate) {
+      dateSet.add(localDate);
+    }
+  }
+
+  if (dateSet.size === 0) {
+    return { streak: 0 };
+  }
+
+  const today = toLocalDateString(new Date());
+  const sortedDates = Array.from(dateSet).sort();
+  const latestDate = sortedDates[sortedDates.length - 1];
+
+  const diffFromToday = diffInDays(today, latestDate);
+
+  // Jika catatan terakhir lebih dari 1 hari yang lalu (>= 2), streak putus
+  if (diffFromToday > 1) {
+    return { streak: 0, lastDate: latestDate };
+  }
+
+  // Telusuri hari berturut-turut ke belakang mulai dari latestDate
+  let streak = 0;
+  const [ly, lm, ld] = latestDate.split("-").map(Number);
+  let curUtc = Date.UTC(ly, lm - 1, ld);
+  const msPerDay = 1000 * 60 * 60 * 24;
+
+  while (true) {
+    const dObj = new Date(curUtc);
+    const yStr = dObj.getUTCFullYear();
+    const mStr = String(dObj.getUTCMonth() + 1).padStart(2, "0");
+    const dStr = String(dObj.getUTCDate()).padStart(2, "0");
+    const key = `${yStr}-${mStr}-${dStr}`;
+
+    if (dateSet.has(key)) {
+      streak++;
+      curUtc -= msPerDay;
+    } else {
+      break;
+    }
+  }
+
+  return { streak, lastDate: latestDate };
 }
 
 export const storageService = {

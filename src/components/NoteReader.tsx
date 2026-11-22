@@ -17,8 +17,6 @@ import {
   Printer,
   Star,
   List,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
 
@@ -51,8 +49,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
-  const [murajaahMode, setMurajaahMode] = useState(false);
-  const [revealedQuotes, setRevealedQuotes] = useState<Record<number, boolean>>({});
   const [showToc, setShowToc] = useState(false);
 
   // Kalkulasi statistik waktu baca & kata
@@ -342,53 +338,19 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               );
             }
 
-            // Quote (> ) dengan Mode Muraja'ah / Flashcard Dalil
+            // Quote (> )
             if (trimmed.startsWith("> ")) {
-              const quoteText = trimmed.replace("> ", "");
-              const isRevealed = !!revealedQuotes[lIdx];
-
-              if (murajaahMode && !isRevealed) {
-                return (
-                  <div
-                    key={lIdx}
-                    onClick={() => setRevealedQuotes((prev) => ({ ...prev, [lIdx]: true }))}
-                    className={`my-3 p-3.5 rounded-2xl border-2 border-dashed cursor-pointer transition hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between gap-3 ${
-                      readingTheme === "dark"
-                        ? "border-amber-500/50 bg-amber-950/30 text-amber-200"
-                        : "border-amber-400 bg-amber-50 text-amber-900"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 text-xs font-semibold">
-                      <span className="text-base">🧠</span>
-                      <span>Uji Hafalan: Dalil / Terjemahan disembunyikan</span>
-                    </div>
-                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-200 text-amber-950 shrink-0">
-                      Buka Jawaban 👁️
-                    </span>
-                  </div>
-                );
-              }
-
               return (
-                <div key={lIdx} className="relative group/quote my-2">
-                  <blockquote
-                    className={`border-l-4 pl-3.5 py-1.5 rounded-r-xl italic leading-relaxed ${regularTextSizeClass} ${
-                      readingTheme === "dark"
-                        ? "border-amber-500 bg-amber-950/20 text-slate-200"
-                        : "border-amber-400 bg-amber-50/40 text-slate-700"
-                    }`}
-                  >
-                    {renderInline(quoteText)}
-                  </blockquote>
-                  {murajaahMode && (
-                    <button
-                      onClick={() => setRevealedQuotes((prev) => ({ ...prev, [lIdx]: false }))}
-                      className="text-[10px] text-amber-600 hover:underline font-semibold ml-4 mt-1 block"
-                    >
-                      Tutup kembali 🙈
-                    </button>
-                  )}
-                </div>
+                <blockquote
+                  key={lIdx}
+                  className={`border-l-4 my-2 pl-3.5 py-1.5 rounded-r-xl italic leading-relaxed ${regularTextSizeClass} ${
+                    readingTheme === "dark"
+                      ? "border-amber-500 bg-amber-950/20 text-slate-200"
+                      : "border-amber-400 bg-amber-50/40 text-slate-700"
+                  }`}
+                >
+                  {renderInline(trimmed.replace("> ", ""))}
+                </blockquote>
               );
             }
 
@@ -512,20 +474,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               <Star className={`w-4 h-4 ${note.is_favorite ? "fill-amber-500 text-amber-500" : ""}`} />
             </button>
           )}
-
-          {/* Mode Muraja'ah / Flashcard Button */}
-          <button
-            onClick={() => setMurajaahMode(!murajaahMode)}
-            className={`h-9 px-2.5 rounded-xl flex items-center gap-1 text-xs font-semibold transition active:scale-95 ${
-              murajaahMode
-                ? "bg-amber-500 text-white shadow-sm ring-2 ring-amber-300"
-                : "bg-black/5 hover:bg-black/10 text-slate-700"
-            }`}
-            title={murajaahMode ? "Matikan Mode Muraja'ah" : "Mode Muraja'ah (Sembunyikan Dalil/Terjemahan untuk Uji Hafalan)"}
-          >
-            <span className="text-sm">🧠</span>
-            <span className="hidden sm:inline">Muraja&apos;ah</span>
-          </button>
 
           {/* Table of Contents Button (hanya jika ada heading) */}
           {headings.length > 0 && (

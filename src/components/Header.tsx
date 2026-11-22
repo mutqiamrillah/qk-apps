@@ -11,6 +11,7 @@ interface HeaderProps {
   onLogout: () => void;
   onLoginClick?: () => void;
   onAvatarClick?: () => void;
+  onOpenDailyWisdom?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onLoginClick,
   onAvatarClick,
+  onOpenDailyWisdom,
 }) => {
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
@@ -55,46 +57,57 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className={`pt-3 pb-4 px-5 transition-colors duration-200 ${headerContainerClasses}`}>
-      {/* Top action row: Theme toggle di kiri dan Logout/Login di kanan */}
+      {/* Top action row: Theme toggle & Nasihat di kiri dan Logout/Login di kanan */}
       <div className="flex items-center justify-between mb-4">
-        {onCycleTheme ? (
-          <button
-            onClick={onCycleTheme}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition active:scale-95 shadow-sm ${themePillClasses}`}
-            title={`Ubah Tema Tampilan (Saat ini: ${
-              theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"
-            })`}
-          >
-            {theme === "light" && <Sun className="w-3.5 h-3.5 text-amber-500" />}
-            {theme === "sepia" && <BookOpen className="w-3.5 h-3.5 text-amber-700" />}
-            {theme === "dark" && <Moon className="w-3.5 h-3.5 text-emerald-300" />}
-            <span>
-              {theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"}
-            </span>
-          </button>
-        ) : (
-          <div />
-        )}
+        <div className="flex items-center gap-1.5">
+          {onCycleTheme && (
+            <button
+              onClick={onCycleTheme}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition active:scale-95 shadow-sm ${themePillClasses}`}
+              title={`Ubah Tema Tampilan (Saat ini: ${
+                theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"
+              })`}
+            >
+              {theme === "light" && <Sun className="w-3.5 h-3.5 text-amber-500" />}
+              {theme === "sepia" && <BookOpen className="w-3.5 h-3.5 text-amber-700" />}
+              {theme === "dark" && <Moon className="w-3.5 h-3.5 text-emerald-300" />}
+              <span>
+                {theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"}
+              </span>
+            </button>
+          )}
+
+          {onOpenDailyWisdom && (
+            <button
+              onClick={onOpenDailyWisdom}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition active:scale-95 shadow-sm ${themePillClasses}`}
+              title="Lihat Nasihat Al-Qur'an & Hadits Hari Ini"
+            >
+              <span>✨</span>
+              <span className="hidden sm:inline">Nasihat</span>
+            </button>
+          )}
+        </div>
 
         <div>
           {user.is_logged_in ? (
             <button
               onClick={() => setShowConfirmLogout(true)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition text-xs font-semibold ${authPillClasses}`}
-              title="Keluar dari akun (Logout)"
+              title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
-              <span>Keluar</span>
+              <span>Sign Out</span>
             </button>
           ) : (
             onLoginClick && (
               <button
                 onClick={onLoginClick}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition text-xs font-semibold ${authPillClasses}`}
-                title="Masuk / Daftar"
+                title="Sign In / Register"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Masuk</span>
+                <span>Sign In</span>
               </button>
             )
           )}
@@ -137,10 +150,10 @@ export const Header: React.FC<HeaderProps> = ({
               : "bg-white border-slate-100 text-slate-900"
           }`}>
             <h3 className="text-base font-bold mb-1.5">
-              Keluar Akun?
+              Sign Out?
             </h3>
             <p className="text-xs opacity-75 mb-5 leading-relaxed">
-              Anda akan keluar dari akun {user.email || user.name}. Data catatan Anda tetap aman tersimpan di database.
+              Are you sure you want to sign out of {user.email || user.name}? Your notes will remain safely saved.
             </p>
             <div className="flex gap-2 justify-end">
               <button
@@ -148,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setShowConfirmLogout(false)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100 hover:bg-black/5 transition"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -158,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 transition"
               >
-                Keluar
+                Sign Out
               </button>
             </div>
           </div>
