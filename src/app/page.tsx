@@ -404,29 +404,26 @@ export default function HomePage() {
             )}
 
             {activeTab === "search" && (
-              <div className="p-5">
-                <h1 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "text-white" : theme === "sepia" ? "text-[#423120]" : "text-slate-900"}`}>
-                  Search
-                </h1>
-                <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className={`w-full p-4 rounded-2xl border text-sm text-left flex items-center justify-between transition ${
-                    theme === "dark"
-                      ? "bg-[#0b231e] border-[#16443b] text-emerald-200/60 hover:border-emerald-500"
-                      : theme === "sepia"
-                      ? "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f]/70 hover:border-amber-400"
-                      : "bg-slate-50 border-slate-200 text-slate-400 hover:border-emerald-300"
-                  }`}
-                >
-                  <span>Ketik kata kunci atau tag...</span>
-                  <span>🔍</span>
-                </button>
-                <div className="mt-6">
-                  <h3 className={`text-xs font-bold uppercase tracking-wider mb-3 ${
-                    theme === "dark" ? "text-emerald-500/70" : theme === "sepia" ? "text-amber-800/70" : "text-slate-400"
-                  }`}>
-                    Semua Catatan ({notes.length})
-                  </h3>
+              <div className="pt-3 pb-24">
+                <div className="px-5">
+                  <h1 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "text-white" : theme === "sepia" ? "text-[#423120]" : "text-slate-900"}`}>
+                    Search
+                  </h1>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className={`w-full p-4 rounded-2xl border text-sm text-left flex items-center justify-between transition ${
+                      theme === "dark"
+                        ? "bg-[#0b231e] border-[#16443b] text-emerald-200/60 hover:border-emerald-500"
+                        : theme === "sepia"
+                        ? "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f]/70 hover:border-amber-400"
+                        : "bg-slate-50 border-slate-200 text-slate-400 hover:border-emerald-300"
+                    }`}
+                  >
+                    <span>Ketik kata kunci atau tag...</span>
+                    <span>🔍</span>
+                  </button>
+                </div>
+                <div className="mt-2">
                   <RecentNotes
                     notes={notes}
                     theme={theme}
@@ -498,7 +495,6 @@ export default function HomePage() {
         wisdom={dailyWisdom}
         theme={theme}
         onClose={handleCloseDailyWisdom}
-        onRefresh={(newW) => setDailyWisdom(newW)}
       />
     </div>
   );
