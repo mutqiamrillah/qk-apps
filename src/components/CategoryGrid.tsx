@@ -33,12 +33,14 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
     light: "text-slate-900",
     sepia: "text-[#423120]",
     dark: "text-white",
+    kyutsii: "text-[#4a152b]",
   }[theme];
 
   const cardBaseClasses = {
     light: "bg-white border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-300 text-slate-900",
     sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm hover:border-amber-400 text-[#423120]",
     dark: "bg-[#0e2c26] border-[#17443b] shadow-sm hover:border-emerald-500 text-white",
+    kyutsii: "bg-[#fff9fb] border-[#fbcfe8] shadow-sm hover:border-pink-400 text-[#4a152b]",
   }[theme];
 
   const handleAddSubmit = (e: React.FormEvent) => {
@@ -165,6 +167,8 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
                 ? "bg-[#0b231e] border-[#16443b] text-slate-300"
                 : theme === "sepia"
                 ? "bg-[#f3ebd9]/60 border-[#e2d5bd] text-[#5c462f]"
+                : theme === "kyutsii"
+                ? "bg-[#ffe4ee]/60 border-[#f9b8d0] text-[#831843]"
                 : "bg-slate-50 border-slate-200 text-slate-500"
             }`}>
               <span className="text-2xl">🌱</span>

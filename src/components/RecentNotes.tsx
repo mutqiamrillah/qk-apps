@@ -67,18 +67,21 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
     light: "text-slate-900",
     sepia: "text-[#423120]",
     dark: "text-white",
+    kyutsii: "text-[#4a152b]",
   }[theme];
 
   const cardBaseClasses = {
     light: "bg-white border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-emerald-300 text-slate-900",
     sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm hover:border-amber-400 text-[#423120]",
     dark: "bg-[#0e2c26] border-[#17443b] shadow-sm hover:border-emerald-500 text-white",
+    kyutsii: "bg-[#fff9fb] border-[#fbcfe8] shadow-sm hover:border-pink-400 text-[#4a152b]",
   }[theme];
 
   const emptyBoxClasses = {
     light: "bg-slate-50/80 border-slate-200 text-slate-700",
     sepia: "bg-[#f3ebd9]/60 border-[#e2d5bd] text-[#5c462f]",
     dark: "bg-[#0b231e] border-[#16443b] text-[#d1e5df]",
+    kyutsii: "bg-[#ffe4ee]/60 border-[#f9b8d0] text-[#831843]",
   }[theme];
 
   return (
@@ -106,11 +109,15 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
             }}
             className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 shrink-0 ${
               statusFilter === "all" && activeFilter.type === "all"
-                ? "bg-[#134e43] text-white shadow-sm"
+                ? theme === "kyutsii"
+                  ? "bg-[#ec4899] text-white shadow-sm"
+                  : "bg-[#134e43] text-white shadow-sm"
                 : theme === "dark"
                 ? "bg-[#0f342d] text-emerald-200 border border-[#1d5247]"
                 : theme === "sepia"
                 ? "bg-[#f3ebd9] text-[#5c462f] border border-[#e2d5bd]"
+                : theme === "kyutsii"
+                ? "bg-[#ffe4ee] text-[#831843] border border-[#f9b8d0]"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -184,11 +191,15 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                 }
                 className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
                   isSelected
-                    ? "bg-[#134e43] text-white shadow-sm font-bold"
+                    ? theme === "kyutsii"
+                      ? "bg-[#ec4899] text-white shadow-sm font-bold"
+                      : "bg-[#134e43] text-white shadow-sm font-bold"
                     : theme === "dark"
                     ? "bg-[#0f342d] text-emerald-200 border border-[#1d5247]"
                     : theme === "sepia"
                     ? "bg-[#f3ebd9] text-[#5c462f] border border-[#e2d5bd]"
+                    : theme === "kyutsii"
+                    ? "bg-[#ffe4ee] text-[#831843] border border-[#f9b8d0]"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
@@ -210,11 +221,15 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                 }
                 className={`px-2.5 py-1 rounded-full text-xs whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
                   isSelected
-                    ? "bg-emerald-700 text-white shadow-sm font-bold"
+                    ? theme === "kyutsii"
+                      ? "bg-pink-600 text-white shadow-sm font-bold"
+                      : "bg-emerald-700 text-white shadow-sm font-bold"
                     : theme === "dark"
                     ? "bg-[#0b2923] text-emerald-300 border border-[#194c40]"
                     : theme === "sepia"
                     ? "bg-[#efe5d2] text-amber-900 border border-[#dbcbb2]"
+                    : theme === "kyutsii"
+                    ? "bg-[#ffd9e8] text-[#9d174d] border border-[#f9b8d0]"
                     : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                 }`}
               >

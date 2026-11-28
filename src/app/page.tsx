@@ -24,7 +24,7 @@ import {
 } from "@/lib/supabase";
 import { CategoryItem, NoteItem, UserProfile, AppTheme } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
-import { DailyWisdom, getRandomDailyWisdom } from "@/lib/dailyWisdom";
+import { DailyWisdom, fetchDailyWisdom, getRandomDailyWisdom } from "@/lib/dailyWisdom";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<NavTab>("home");
@@ -64,23 +64,33 @@ export default function HomePage() {
   // Daily Wisdom (Nasihat Al-Qur'an & Hadits harian)
   const [dailyWisdom, setDailyWisdom] = useState<DailyWisdom | null>(null);
   const [isDailyWisdomOpen, setIsDailyWisdomOpen] = useState(false);
+  const [isDailyWisdomRefreshing, setIsDailyWisdomRefreshing] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [initialAuthError, setInitialAuthError] = useState<string | null>(null);
 
   // Munculkan nasihat secara otomatis ketika pertama kali membuka aplikasi di hari tersebut
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const today = toLocalDateString(new Date());
-      const lastSeen = localStorage.getItem("qk_last_daily_wisdom_date");
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const today = toLocalDateString(new Date());
+    const lastSeen = localStorage.getItem("qk_last_daily_wisdom_date");
 
-      const wisdom = getRandomDailyWisdom(today);
-      setDailyWisdom(wisdom);
+    setDailyWisdom(getRandomDailyWisdom(today));
 
-      // Hanya auto-popup jika belum pernah dibuka pada hari ini dan tidak sedang reset password
-      if (lastSeen !== today && !isPasswordRecoveryPending()) {
-        setIsDailyWisdomOpen(true);
-      }
+    // Hanya auto-popup jika belum pernah dibuka pada hari ini dan tidak sedang reset password
+    if (lastSeen !== today && !isPasswordRecoveryPending()) {
+      setIsDailyWisdomOpen(true);
     }
+
+    fetchDailyWisdom(today).then((liveWisdom) => {
+      if (!cancelled) {
+        setDailyWisdom(liveWisdom);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleCloseDailyWisdom = () => {
@@ -95,8 +105,19 @@ export default function HomePage() {
     if (!dailyWisdom) {
       const today = toLocalDateString(new Date());
       setDailyWisdom(getRandomDailyWisdom(today));
+      fetchDailyWisdom(today).then(setDailyWisdom);
     }
     setIsDailyWisdomOpen(true);
+  };
+
+  const handleRefreshDailyWisdom = async () => {
+    setIsDailyWisdomRefreshing(true);
+    try {
+      const freshWisdom = await fetchDailyWisdom();
+      setDailyWisdom(freshWisdom);
+    } finally {
+      setIsDailyWisdomRefreshing(false);
+    }
   };
 
   // Category filter state in Study tab
@@ -106,7 +127,7 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("qk_app_theme") as AppTheme | null;
-      if (savedTheme && ["light", "sepia", "dark"].includes(savedTheme)) {
+      if (savedTheme && ["light", "sepia", "dark", "kyutsii"].includes(savedTheme)) {
         setTheme(savedTheme);
       }
     }
@@ -123,7 +144,8 @@ export default function HomePage() {
     const next: Record<AppTheme, AppTheme> = {
       light: "sepia",
       sepia: "dark",
-      dark: "light",
+      dark: "kyutsii",
+      kyutsii: "light",
     };
     handleThemeChange(next[theme]);
   };
@@ -389,6 +411,7 @@ export default function HomePage() {
     light: "bg-white text-slate-900",
     sepia: "bg-[#faf6ee] text-[#423120]",
     dark: "bg-[#071915] text-[#d1e5df]",
+    kyutsii: "bg-[#fff5f8] text-[#4a152b]",
   }[theme];
 
   return (
@@ -457,7 +480,7 @@ export default function HomePage() {
             {activeTab === "search" && (
               <div className="pt-3 pb-24">
                 <div className="px-5">
-                  <h1 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "text-white" : theme === "sepia" ? "text-[#423120]" : "text-slate-900"}`}>
+                  <h1 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "text-white" : theme === "sepia" ? "text-[#423120]" : theme === "kyutsii" ? "text-[#4a152b]" : "text-slate-900"}`}>
                     Search
                   </h1>
                   <button
@@ -467,6 +490,8 @@ export default function HomePage() {
                         ? "bg-[#0b231e] border-[#16443b] text-emerald-200/60 hover:border-emerald-500"
                         : theme === "sepia"
                         ? "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f]/70 hover:border-amber-400"
+                        : theme === "kyutsii"
+                        ? "bg-[#ffe4ee]/80 border-[#f9b8d0] text-[#9d4467] hover:border-pink-400"
                         : "bg-slate-50 border-slate-200 text-slate-400 hover:border-emerald-300"
                     }`}
                   >
@@ -555,6 +580,8 @@ export default function HomePage() {
         isOpen={isDailyWisdomOpen}
         wisdom={dailyWisdom}
         theme={theme}
+        isRefreshing={isDailyWisdomRefreshing}
+        onRefresh={handleRefreshDailyWisdom}
         onClose={handleCloseDailyWisdom}
       />
     </div>

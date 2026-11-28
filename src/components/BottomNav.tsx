@@ -33,18 +33,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     light: "bg-white/95 border-t border-slate-100",
     sepia: "bg-[#faf6ee]/95 border-t border-[#ebdcc7]",
     dark: "bg-[#0a231e]/95 border-t border-[#16443b]",
+    kyutsii: "bg-[#fff5f8]/95 border-t border-[#fbcfe8]",
   }[theme];
 
   const activeTabClasses = {
     light: "text-emerald-800 font-bold",
     sepia: "text-amber-800 font-bold",
     dark: "text-emerald-300 font-bold",
+    kyutsii: "text-pink-600 font-bold",
   }[theme];
 
   const inactiveTabClasses = {
     light: "text-slate-400 hover:text-slate-600 font-medium",
     sepia: "text-[#8d7760] hover:text-[#5c462f] font-medium",
     dark: "text-emerald-600/70 hover:text-emerald-300 font-medium",
+    kyutsii: "text-pink-400/80 hover:text-pink-600 font-medium",
   }[theme];
 
   return (
@@ -53,7 +56,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       {canShowFab && (
         <button
           onClick={onNewNoteClick}
-          className="fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full bg-[#134e43] text-white flex items-center justify-center text-3xl shadow-xl shadow-emerald-950/20 hover:scale-105 active:scale-95 transition-all"
+          className={`fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full text-white flex items-center justify-center text-3xl shadow-xl hover:scale-105 active:scale-95 transition-all ${
+            theme === "kyutsii"
+              ? "bg-[#ec4899] shadow-pink-500/25"
+              : "bg-[#134e43] shadow-emerald-950/20"
+          }`}
           title="Buat Catatan Baru"
         >
           <Plus className="w-7 h-7 stroke-[2.5]" />

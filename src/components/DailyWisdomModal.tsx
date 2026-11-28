@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Sparkles, Copy, Check } from "lucide-react";
+import { X, Sparkles, Copy, Check, RefreshCw } from "lucide-react";
 import { DailyWisdom } from "@/lib/dailyWisdom";
 import { AppTheme } from "@/lib/types";
 
@@ -9,6 +9,8 @@ interface DailyWisdomModalProps {
   isOpen: boolean;
   wisdom: DailyWisdom | null;
   theme?: AppTheme;
+  isRefreshing?: boolean;
+  onRefresh?: () => void;
   onClose: () => void;
 }
 
@@ -16,6 +18,8 @@ export const DailyWisdomModal: React.FC<DailyWisdomModalProps> = ({
   isOpen,
   wisdom,
   theme = "light",
+  isRefreshing = false,
+  onRefresh,
   onClose,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -39,12 +43,14 @@ export const DailyWisdomModal: React.FC<DailyWisdomModalProps> = ({
     light: "bg-white text-slate-800 border-slate-150",
     sepia: "bg-[#faf6ee] text-[#423120] border-[#ebdcc7]",
     dark: "bg-[#0b2620] text-[#e0ece8] border-[#18493f]",
+    kyutsii: "bg-[#fff5f8] text-[#4a152b] border-[#fbcfe8]",
   }[theme];
 
   const arabicBoxClasses = {
     light: "bg-emerald-50/50 border-emerald-200/60 text-emerald-950",
     sepia: "bg-[#f3ebd9] border-[#e2d5bd] text-amber-950",
     dark: "bg-[#071d18] border-[#153f36] text-amber-200",
+    kyutsii: "bg-[#ffe4ee]/80 border-[#f9b8d0] text-[#5c1634]",
   }[theme];
 
   return (
@@ -82,32 +88,49 @@ export const DailyWisdomModal: React.FC<DailyWisdomModalProps> = ({
           </span>
         </div>
 
-        {/* Arabic Box */}
-        <div
-          className={`p-4 rounded-2xl border-l-4 border-emerald-600 mb-3.5 shadow-inner ${arabicBoxClasses}`}
-        >
+        {/* Scrollable Quote Body */}
+        <div className="max-h-[50vh] overflow-y-auto pr-1 mb-4">
+          {/* Arabic Box */}
           <div
-            dir="rtl"
-            className="font-arabic text-right text-2xl leading-loose font-medium select-text"
+            className={`p-3.5 rounded-2xl border-l-4 border-emerald-600 mb-3 shadow-inner ${arabicBoxClasses}`}
           >
-            {wisdom.arabic}
+            <div
+              dir="rtl"
+              className="font-arabic text-right text-xl leading-relaxed font-medium select-text"
+            >
+              {wisdom.arabic}
+            </div>
           </div>
-        </div>
 
-        {/* Translation */}
-        <div className="mb-4">
-          <p className="text-xs sm:text-sm leading-relaxed font-normal opacity-90 italic">
-            &ldquo;{wisdom.translation}&rdquo;
-          </p>
-          <div className="mt-2 text-right">
-            <span className="inline-block text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">
-              — {wisdom.sourceRef}
-            </span>
+          {/* Translation */}
+          <div>
+            <p className="text-xs sm:text-sm leading-relaxed font-normal opacity-90 italic">
+              &ldquo;{wisdom.translation}&rdquo;
+            </p>
+            <div className="mt-2 text-right">
+              <span className="inline-block text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+                — {wisdom.sourceRef}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Actions Bar */}
         <div className="flex items-center gap-2 pt-2 border-t border-black/5 dark:border-white/5">
+          {/* Acak Nasihat Lain dari API */}
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 transition active:scale-95 disabled:opacity-50"
+              title="Ambil Ayat / Hadits Acak Lainnya"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 opacity-75 ${isRefreshing ? "animate-spin" : ""}`} />
+              <span>Acak</span>
+            </button>
+          )}
+
           {/* Salin Teks */}
           <button
             onClick={handleCopy}
@@ -130,7 +153,11 @@ export const DailyWisdomModal: React.FC<DailyWisdomModalProps> = ({
           {/* Tutup & Alhamdulillah */}
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold transition shadow-md active:scale-95 text-center"
+            className={`flex-1 py-2.5 px-4 rounded-xl text-white text-xs font-bold transition shadow-md active:scale-95 text-center ${
+              theme === "kyutsii"
+                ? "bg-[#ec4899] hover:bg-[#db2777]"
+                : "bg-[#134e43] hover:bg-[#0e3b33]"
+            }`}
           >
             Alhamdulillah, Mengerti
           </button>

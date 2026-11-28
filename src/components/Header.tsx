@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { LogOut, LogIn, Sun, Moon, BookOpen } from "lucide-react";
+import { LogOut, LogIn, Sun, Moon, BookOpen, Heart } from "lucide-react";
 import { UserProfile, AppTheme } from "@/lib/types";
 
 interface HeaderProps {
@@ -29,30 +29,35 @@ export const Header: React.FC<HeaderProps> = ({
     light: "bg-white border-b border-slate-100",
     sepia: "bg-[#faf6ee] border-b border-[#ebdcc7]",
     dark: "bg-[#0a231e] border-b border-[#16443b]",
+    kyutsii: "bg-[#fff5f8] border-b border-[#fbcfe8]",
   }[theme];
 
   const titleTextClasses = {
     light: "text-slate-900",
     sepia: "text-[#423120]",
     dark: "text-white",
+    kyutsii: "text-[#4a152b]",
   }[theme];
 
   const subTextClasses = {
     light: "text-emerald-700",
     sepia: "text-amber-800",
     dark: "text-emerald-300",
+    kyutsii: "text-pink-600",
   }[theme];
 
   const themePillClasses = {
     light: "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100",
     sepia: "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f] hover:bg-[#ebdcc7]",
     dark: "bg-[#0f342d] border-[#1d5247] text-emerald-200 hover:bg-[#16443b]",
+    kyutsii: "bg-[#ffe4ee] border-[#f9b8d0] text-[#831843] hover:bg-[#ffd6e6]",
   }[theme];
 
   const authPillClasses = {
     light: "bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/60",
     sepia: "bg-[#f3ebd9] hover:bg-rose-50 text-[#5c462f] hover:text-rose-600 border border-[#e2d5bd]",
     dark: "bg-[#0f342d] hover:bg-rose-900/40 text-emerald-200 hover:text-rose-400 border border-[#1d5247]",
+    kyutsii: "bg-[#ffe4ee] hover:bg-pink-200 text-[#831843] hover:text-[#4a152b] border border-[#f9b8d0]",
   }[theme];
 
   return (
@@ -65,14 +70,27 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onCycleTheme}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition active:scale-95 shadow-sm ${themePillClasses}`}
               title={`Ubah Tema Tampilan (Saat ini: ${
-                theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"
+                theme === "dark"
+                  ? "Malam"
+                  : theme === "sepia"
+                  ? "Sepia"
+                  : theme === "kyutsii"
+                  ? "Kyutsii"
+                  : "Terang"
               })`}
             >
               {theme === "light" && <Sun className="w-3.5 h-3.5 text-amber-500" />}
               {theme === "sepia" && <BookOpen className="w-3.5 h-3.5 text-amber-700" />}
               {theme === "dark" && <Moon className="w-3.5 h-3.5 text-emerald-300" />}
+              {theme === "kyutsii" && <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-400" />}
               <span>
-                {theme === "dark" ? "Malam" : theme === "sepia" ? "Sepia" : "Terang"}
+                {theme === "dark"
+                  ? "Malam"
+                  : theme === "sepia"
+                  ? "Sepia"
+                  : theme === "kyutsii"
+                  ? "Kyutsii"
+                  : "Terang"}
               </span>
             </button>
           )}
@@ -132,7 +150,11 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           onClick={onAvatarClick || onLoginClick}
-          className="w-12 h-12 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105 active:scale-95 cursor-pointer ${
+            theme === "kyutsii"
+              ? "bg-[#ec4899] text-pink-50"
+              : "bg-[#134e43] text-amber-300"
+          }`}
           title="Klik untuk melihat profil / mengganti avatar"
         >
           {user.avatar || "🤲"}
@@ -147,6 +169,8 @@ export const Header: React.FC<HeaderProps> = ({
               ? "bg-[#0e2c26] border-[#1d5247] text-white"
               : theme === "sepia"
               ? "bg-[#faf6ee] border-[#e2d5bd] text-[#423120]"
+              : theme === "kyutsii"
+              ? "bg-[#fff5f8] border-[#fbcfe8] text-[#4a152b]"
               : "bg-white border-slate-100 text-slate-900"
           }`}>
             <h3 className="text-base font-bold mb-1.5">

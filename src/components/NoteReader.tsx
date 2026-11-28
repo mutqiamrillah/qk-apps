@@ -15,6 +15,7 @@ import {
   Clock,
   Copy,
   Star,
+  Heart,
 } from "lucide-react";
 import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats, sanitizeSafeUrl } from "@/lib/types";
 
@@ -43,7 +44,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 }) => {
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xl">("normal");
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
-  const [readingTheme, setReadingTheme] = useState<"light" | "sepia" | "dark">(theme);
+  const [readingTheme, setReadingTheme] = useState<AppTheme>(theme);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
@@ -59,7 +60,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
     }
   }, [theme]);
 
-  const changeTheme = (newTheme: "light" | "sepia" | "dark") => {
+  const changeTheme = (newTheme: AppTheme) => {
     setReadingTheme(newTheme);
     onThemeChange?.(newTheme);
   };
@@ -122,6 +123,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               className={`underline underline-offset-2 font-medium break-words transition ${
                 readingTheme === "dark"
                   ? "text-emerald-300 decoration-emerald-400/70 hover:text-emerald-200"
+                  : readingTheme === "kyutsii"
+                  ? "text-pink-700 decoration-pink-400 hover:text-pink-900"
                   : "text-emerald-700 decoration-emerald-600/60 hover:text-emerald-900"
               }`}
             >
@@ -147,6 +150,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className={`underline underline-offset-2 font-medium break-all transition ${
                   readingTheme === "dark"
                     ? "text-emerald-300 decoration-emerald-400/70 hover:text-emerald-200"
+                    : readingTheme === "kyutsii"
+                    ? "text-pink-700 decoration-pink-400 hover:text-pink-900"
                     : "text-emerald-700 decoration-emerald-600/60 hover:text-emerald-900"
                 }`}
               >
@@ -163,7 +168,13 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         return (
           <strong
             key={i}
-            className={`font-bold ${readingTheme === "dark" ? "text-emerald-300" : "text-slate-900"}`}
+            className={`font-bold ${
+              readingTheme === "dark"
+                ? "text-emerald-300"
+                : readingTheme === "kyutsii"
+                ? "text-[#6b1438]"
+                : "text-slate-900"
+            }`}
           >
             {token.slice(2, -2)}
           </strong>
@@ -183,7 +194,13 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         return (
           <em
             key={i}
-            className={`italic ${readingTheme === "dark" ? "text-slate-300" : "text-slate-600"}`}
+            className={`italic ${
+              readingTheme === "dark"
+                ? "text-slate-300"
+                : readingTheme === "kyutsii"
+                ? "text-[#833455]"
+                : "text-slate-600"
+            }`}
           >
             {token.slice(1, -1)}
           </em>
@@ -214,13 +231,19 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             className={`my-2 px-3 py-2 border-l-4 rounded-r-xl ${
               readingTheme === "dark"
                 ? "border-emerald-400 bg-emerald-950/40"
+                : readingTheme === "kyutsii"
+                ? "border-pink-400 bg-[#ffe4ee]/80"
                 : "border-emerald-600 bg-emerald-50/30"
             }`}
           >
             <div
               dir="rtl"
               className={`font-arabic text-right leading-relaxed tracking-wide ${
-                readingTheme === "dark" ? "text-amber-200" : "text-emerald-950"
+                readingTheme === "dark"
+                  ? "text-amber-200"
+                  : readingTheme === "kyutsii"
+                  ? "text-[#5c1634]"
+                  : "text-emerald-950"
               } ${
                 fontSizeLevel === "normal"
                   ? "text-lg"
@@ -292,7 +315,11 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 <h1
                   key={lIdx}
                   className={`font-black mt-5 mb-2 tracking-tight ${
-                    readingTheme === "dark" ? "text-white" : "text-slate-900"
+                    readingTheme === "dark"
+                      ? "text-white"
+                      : readingTheme === "kyutsii"
+                      ? "text-[#4a152b]"
+                      : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
                       ? "text-xl"
@@ -312,7 +339,11 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 <h2
                   key={lIdx}
                   className={`font-bold mt-4 mb-1.5 ${
-                    readingTheme === "dark" ? "text-emerald-200" : "text-slate-900"
+                    readingTheme === "dark"
+                      ? "text-emerald-200"
+                      : readingTheme === "kyutsii"
+                      ? "text-[#831843]"
+                      : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
                       ? "text-lg"
@@ -332,7 +363,11 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 <h3
                   key={lIdx}
                   className={`font-bold mt-3.5 mb-1 ${
-                    readingTheme === "dark" ? "text-emerald-300" : "text-slate-800"
+                    readingTheme === "dark"
+                      ? "text-emerald-300"
+                      : readingTheme === "kyutsii"
+                      ? "text-[#9d174d]"
+                      : "text-slate-800"
                   } ${
                     fontSizeLevel === "normal"
                       ? "text-base"
@@ -354,6 +389,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                   className={`border-l-4 my-2 pl-3.5 py-1.5 rounded-r-xl italic leading-relaxed ${regularTextSizeClass} ${
                     readingTheme === "dark"
                       ? "border-amber-500 bg-amber-950/20 text-slate-200"
+                      : readingTheme === "kyutsii"
+                      ? "border-pink-400 bg-[#ffeef4] text-[#5c1634]"
                       : "border-amber-400 bg-amber-50/40 text-slate-700"
                   }`}
                 >
@@ -409,18 +446,21 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
     light: "bg-white text-slate-800",
     sepia: "bg-[#faf6ee] text-[#423120]",
     dark: "bg-[#0a231e] text-[#d1e5df]",
+    kyutsii: "bg-[#fff5f8] text-[#4a152b]",
   }[readingTheme];
 
   const headerBarClasses = {
     light: "bg-white/90 border-slate-100 text-slate-700",
     sepia: "bg-[#faf6ee]/90 border-[#ebdcc7] text-[#423120]",
     dark: "bg-[#0a231e]/90 border-[#16443b] text-[#e0ece8]",
+    kyutsii: "bg-[#fff5f8]/90 border-[#fbcfe8] text-[#831843]",
   }[readingTheme];
 
   const pillClasses = {
     light: "bg-slate-50 border-slate-150/70 text-slate-600",
     sepia: "bg-[#f3ebd9] border-[#e2d5bd] text-[#5c462f]",
     dark: "bg-[#0f342d] border-[#1d5247] text-emerald-200",
+    kyutsii: "bg-[#ffe4ee] border-[#f9b8d0] text-[#831843]",
   }[readingTheme];
 
   return (
@@ -524,7 +564,11 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       <div className="px-6 pt-5 flex-1 max-w-prose mx-auto w-full">
         {/* Title */}
         <h1 className={`text-2xl font-extrabold tracking-tight leading-snug ${
-          readingTheme === "dark" ? "text-white" : "text-slate-900"
+          readingTheme === "dark"
+            ? "text-white"
+            : readingTheme === "kyutsii"
+            ? "text-[#4a152b]"
+            : "text-slate-900"
         }`}>
           {note.is_pinned && <span className="mr-1.5 text-amber-500">📌</span>}
           {note.title || "Untitled"}
@@ -577,6 +621,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border ${
         readingTheme === "dark"
           ? "bg-[#0e342c]/95 border-[#1d5247] text-white"
+          : readingTheme === "kyutsii"
+          ? "bg-[#fff5f8]/95 border-[#fbcfe8] text-[#831843]"
           : "bg-white/95 border-slate-200 text-slate-800"
       }`}>
         {/* Quick Edit */}
@@ -641,7 +687,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           )}
         </div>
 
-        {/* Theme Mode Toggle (Light / Sepia / Dark) */}
+        {/* Theme Mode Toggle (Light / Sepia / Dark / Kyutsii) */}
         <div className="relative">
           <button
             onClick={() => {
@@ -649,11 +695,12 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               setShowFontSizeMenu(false);
             }}
             className="px-3 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center gap-1 text-xs font-semibold active:scale-95 transition"
-            title="Tema Membaca (Terang, Sepia, Gelap)"
+            title="Tema Membaca (Terang, Sepia, Gelap, Kyutsii)"
           >
             {readingTheme === "light" && <Sun className="w-3.5 h-3.5 text-amber-500" />}
             {readingTheme === "sepia" && <BookOpen className="w-3.5 h-3.5 text-amber-700" />}
             {readingTheme === "dark" && <Moon className="w-3.5 h-3.5 text-emerald-300" />}
+            {readingTheme === "kyutsii" && <Heart className="w-3.5 h-3.5 text-pink-500 fill-pink-400" />}
             <span className="capitalize text-[11px]">{readingTheme}</span>
           </button>
 
@@ -661,6 +708,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             <div className={`absolute bottom-12 -right-4 rounded-2xl shadow-xl border p-2 min-w-[140px] flex flex-col gap-1 z-40 ${
               readingTheme === "dark"
                 ? "bg-[#0e342c] border-[#1d5247] text-white"
+                : readingTheme === "kyutsii"
+                ? "bg-[#fff5f8] border-[#fbcfe8] text-[#4a152b]"
                 : "bg-white border-slate-200 text-slate-800"
             }`}>
               <button
@@ -692,6 +741,16 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               >
                 <span className="flex items-center gap-2">🌙 <span>Malam</span></span>
                 {readingTheme === "dark" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+              </button>
+              <button
+                onClick={() => {
+                  changeTheme("kyutsii");
+                  setShowThemeMenu(false);
+                }}
+                className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-pink-100/70 rounded-lg text-left"
+              >
+                <span className="flex items-center gap-2">🌸 <span>Kyutsii</span></span>
+                {readingTheme === "kyutsii" && <Check className="w-3.5 h-3.5 text-pink-600" />}
               </button>
             </div>
           )}

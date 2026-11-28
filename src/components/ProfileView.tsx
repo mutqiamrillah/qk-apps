@@ -323,12 +323,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     light: "text-slate-900",
     sepia: "text-[#423120]",
     dark: "text-white",
+    kyutsii: "text-[#4a152b]",
   }[theme];
 
   const cardBaseClasses = {
     light: "bg-white border-slate-150 shadow-sm text-slate-900",
     sepia: "bg-[#faf6ee] border-[#ebdcc7] shadow-sm text-[#423120]",
     dark: "bg-[#0e2c26] border-[#17443b] shadow-sm text-white",
+    kyutsii: "bg-[#fff9fb] border-[#fbcfe8] shadow-sm text-[#4a152b]",
   }[theme];
 
   return (
@@ -667,9 +669,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   ? "bg-[#0b231e] border-[#16443b]"
                   : theme === "sepia"
                   ? "bg-[#f3ebd9] border-[#e2d5bd]"
+                  : theme === "kyutsii"
+                  ? "bg-[#ffe4ee]/80 border-[#f9b8d0]"
                   : "bg-slate-50 border-slate-100"
               }`}>
-                <div className="text-2xl font-black text-emerald-700">
+                <div className={`text-2xl font-black ${theme === "kyutsii" ? "text-pink-600" : "text-emerald-700"}`}>
                   {user.streak_days}
                 </div>
                 <div className="text-[11px] opacity-70 font-medium">
@@ -682,9 +686,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   ? "bg-[#0b231e] border-[#16443b]"
                   : theme === "sepia"
                   ? "bg-[#f3ebd9] border-[#e2d5bd]"
+                  : theme === "kyutsii"
+                  ? "bg-[#ffe4ee]/80 border-[#f9b8d0]"
                   : "bg-slate-50 border-slate-100"
               }`}>
-                <div className="text-2xl font-black text-emerald-700">
+                <div className={`text-2xl font-black ${theme === "kyutsii" ? "text-pink-600" : "text-emerald-700"}`}>
                   {notes.length}
                 </div>
                 <div className="text-[11px] opacity-70 font-medium">

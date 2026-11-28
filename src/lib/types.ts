@@ -1,4 +1,4 @@
-export type AppTheme = "light" | "sepia" | "dark";
+export type AppTheme = "light" | "sepia" | "dark" | "kyutsii";
 
 /**
  * Validates and normalizes an external URL for safe hyperlink rendering.
