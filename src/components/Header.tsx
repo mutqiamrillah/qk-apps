@@ -153,6 +153,8 @@ export const Header: React.FC<HeaderProps> = ({
           className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-md select-none transition-transform hover:scale-105 active:scale-95 cursor-pointer ${
             theme === "kyutsii"
               ? "bg-[#ec4899] text-pink-50"
+              : theme === "sepia"
+              ? "bg-[#8c5a2b] text-amber-100"
               : "bg-[#134e43] text-amber-300"
           }`}
           title="Klik untuk melihat profil / mengganti avatar"

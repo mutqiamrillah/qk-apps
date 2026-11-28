@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { X, Save, Sparkles, Link2 } from "lucide-react";
-import { CategoryItem, NoteItem, formatFullDateTime, sanitizeSafeUrl } from "@/lib/types";
+import { CategoryItem, NoteItem, AppTheme, formatFullDateTime, sanitizeSafeUrl } from "@/lib/types";
+import { THEME_STYLES } from "@/lib/theme";
 
 interface NoteEditorModalProps {
   isOpen: boolean;
   noteToEdit: NoteItem | null;
   categories: CategoryItem[];
+  theme?: AppTheme;
   onClose: () => void;
   onSave: (note: NoteItem) => void;
 }
@@ -16,9 +18,11 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   isOpen,
   noteToEdit,
   categories,
+  theme = "light",
   onClose,
   onSave,
 }) => {
+  const styles = THEME_STYLES[theme];
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Lectures");
   const [speaker, setSpeaker] = useState("");
@@ -308,15 +312,15 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
+      <div className={`rounded-t-3xl sm:rounded-3xl border w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200 ${styles.modalBg}`}>
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">
+        <div className="px-5 py-4 border-b border-black/10 flex items-center justify-between">
+          <h2 className="text-base font-bold">
             {noteToEdit ? "Edit Catatan" : "Catatan Baru"}
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500"
+            className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center opacity-70"
           >
             <X className="w-5 h-5" />
           </button>
@@ -357,7 +361,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold opacity-85 mb-1">
               Judul Catatan / Kajian *
             </label>
             <input
@@ -366,20 +370,20 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Contoh: 268 | Tadzkaratus Saami'"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${styles.inputBg} ${styles.ringFocus}`}
             />
           </div>
 
           {/* Category & Episode */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold opacity-85 mb-1">
                 Kategori
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${styles.inputBg} ${styles.ringFocus}`}
               >
                 {categories
                   .filter((c) => c.id !== "all")
@@ -391,7 +395,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold opacity-85 mb-1">
                 No. Episode / Seri
               </label>
               <input
@@ -399,7 +403,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 value={episodeNo}
                 onChange={(e) => setEpisodeNo(e.target.value)}
                 placeholder="Contoh: No. 268 / Eps #5"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${styles.inputBg} ${styles.ringFocus}`}
               />
             </div>
           </div>
@@ -407,7 +411,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
           {/* Speaker / Pemateri & Tags */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold opacity-85 mb-1">
                 Pemateri / Ustadz / Podcast
               </label>
               <input
@@ -415,11 +419,11 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 value={speaker}
                 onChange={(e) => setSpeaker(e.target.value)}
                 placeholder="Contoh: Ustadz Nuzul Dzikri"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${styles.inputBg} ${styles.ringFocus}`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold opacity-85 mb-1">
                 Tags (Pisahkan koma)
               </label>
               <input
@@ -427,7 +431,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 value={tagsStr}
                 onChange={(e) => setTagsStr(e.target.value)}
                 placeholder="sabar, tazkiyah, adab"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 ${styles.inputBg} ${styles.ringFocus}`}
               />
             </div>
           </div>
@@ -436,7 +440,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <Sparkles className={`w-3.5 h-3.5 ${styles.accentIcon}`} />
                 <span>Format Teks</span>
               </label>
               <span className="text-[10px] text-slate-400">Geser untuk opsi lainnya ➔</span>
@@ -447,7 +451,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Title")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format sebagai Title (#)"
               >
                 Title
@@ -455,7 +459,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Heading")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format sebagai Heading (##)"
               >
                 Heading
@@ -463,7 +467,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Subheading")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format sebagai Subheading (###)"
               >
                 Subheading
@@ -471,7 +475,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Body")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format sebagai Body biasa"
               >
                 Body
@@ -479,7 +483,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Bold")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Bold (**teks**)"
               >
                 Bold
@@ -487,7 +491,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Italic")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold italic rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold italic rounded-lg bg-white border border-slate-200 text-slate-800 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Italic (*teks*)"
               >
                 Italic
@@ -505,8 +509,8 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 onClick={handleOpenLinkForm}
                 className={`whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg border active:scale-95 transition shrink-0 flex items-center gap-1 ${
                   showLinkForm
-                    ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                    ? `${styles.badgeBg}`
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
                 title="Sisipkan Hyperlink ([teks](url))"
               >
@@ -516,7 +520,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Quote")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Quote (>)"
               >
                 Quote
@@ -524,7 +528,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Bullets")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Bullet List (-)"
               >
                 Bullets
@@ -532,7 +536,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Numbered")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Numbered List (1.)"
               >
                 Numbered
@@ -540,7 +544,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Center")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Rata Tengah"
               >
                 Center
@@ -548,7 +552,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Align left")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Rata Kiri"
               >
                 Align left
@@ -556,7 +560,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Align right")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Rata Kanan"
               >
                 Align right
@@ -564,7 +568,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Justify")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-black/5 hover:border-slate-300 active:scale-95 transition shrink-0"
                 title="Format Rata Kanan-Kiri"
               >
                 Justify
@@ -572,7 +576,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSnippet("arabic")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
               >
                 + Teks Arab
               </button>
@@ -589,7 +593,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSymbol(" ﷺ ")}
-                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
                 title="Shalallahu 'alaihi wa sallam (ﷺ)"
               >
                 ﷺ
@@ -597,7 +601,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSymbol(" ﷻ ")}
-                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
                 title="Jalla Jalaluh (ﷻ)"
               >
                 ﷻ
@@ -605,7 +609,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSymbol(" ﷸ ")}
-                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
                 title="Radhiyallahu 'anhu (ﷸ)"
               >
                 ﷸ
@@ -613,7 +617,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSymbol(" ﷷ ")}
-                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
                 title="Rahimahullah (ﷷ)"
               >
                 ﷷ
@@ -621,7 +625,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleInsertSymbol(" ﷽ ")}
-                className="whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100 active:scale-95 transition shrink-0"
+                className={`whitespace-nowrap px-2 py-1 text-xs font-bold rounded-lg border active:scale-95 transition shrink-0 ${styles.badgeBg}`}
                 title="Bismillahir Rahmanir Rahim (﷽)"
               >
                 ﷽
@@ -629,7 +633,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
             </div>
 
             {showLinkForm && (
-              <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2 animate-in fade-in">
+              <div className={`p-3 rounded-xl border space-y-2 animate-in fade-in ${styles.badgeBg}`}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
@@ -642,7 +646,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                       }
                     }}
                     placeholder="Teks link (opsional)"
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
                   />
                   <input
                     type="text"
@@ -658,7 +662,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                       }
                     }}
                     placeholder="https://contoh.com"
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400"
                   />
                 </div>
                 {linkError && (
@@ -678,7 +682,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleInsertLink}
-                    className="px-3 py-1 rounded-lg bg-[#134e43] hover:bg-[#0e3b33] text-white text-[11px] font-bold transition"
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${styles.primaryBtn}`}
                   >
                     Sisipkan Link
                   </button>
@@ -696,7 +700,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Tuliskan intisari ceramah atau gunakan tombol format di atas..."
-              className="w-full p-3.5 rounded-xl border border-slate-200 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed"
+              className={`w-full p-3.5 rounded-xl border border-slate-200 text-sm font-sans focus:outline-none focus:ring-2 leading-relaxed ${styles.ringFocus}`}
             />
           </div>
 
@@ -716,7 +720,7 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
 
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold flex items-center gap-2 shadow-md hover:scale-105 active:scale-95 transition"
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md hover:scale-105 active:scale-95 transition ${styles.primaryBtn}`}
             >
               <Save className="w-4 h-4" />
               <span>Simpan Catatan</span>

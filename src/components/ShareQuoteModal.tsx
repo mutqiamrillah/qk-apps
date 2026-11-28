@@ -1,20 +1,24 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { X, Download, Share2, Sparkles, Check } from "lucide-react";
-import { NoteItem } from "@/lib/types";
+import { X, Download, Share2, Check } from "lucide-react";
+import { NoteItem, AppTheme } from "@/lib/types";
+import { THEME_STYLES } from "@/lib/theme";
 
 interface ShareQuoteModalProps {
   isOpen: boolean;
   note: NoteItem | null;
+  theme?: AppTheme;
   onClose: () => void;
 }
 
 export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
   isOpen,
   note,
+  theme = "light",
   onClose,
 }) => {
+  const styles = THEME_STYLES[theme];
   const [quoteText, setQuoteText] = useState("");
   const [arabicSnippet, setArabicSnippet] = useState("");
   const [downloading, setDownloading] = useState(false);
@@ -63,10 +67,11 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
     canvas.height = height;
 
     // 1. Draw Background Gradient
+    const [stop0, stop1, stop2] = styles.quoteCanvasStops;
     const grad = ctx.createLinearGradient(0, 0, width, height);
-    grad.addColorStop(0, "#134e43");
-    grad.addColorStop(0.6, "#0e3a32");
-    grad.addColorStop(1, "#08231e");
+    grad.addColorStop(0, stop0);
+    grad.addColorStop(0.6, stop1);
+    grad.addColorStop(1, stop2);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
@@ -208,36 +213,36 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
+      <div className={`rounded-3xl border w-full max-w-md shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 ${styles.modalBg}`}>
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center opacity-70"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${styles.pillBadge}`}>
             ✨
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold">
               Bagikan Faidah Ilmu
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs opacity-70">
               Generate kartu kutipan estetik untuk Story & WhatsApp.
             </p>
           </div>
         </div>
 
         {/* Live Card Preview */}
-        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#134e43] via-[#0e3b33] to-[#092822] text-white p-5 shadow-lg border border-emerald-700/40 my-3 text-center">
+        <div className={`rounded-2xl overflow-hidden bg-gradient-to-br text-white p-5 shadow-lg border my-3 text-center ${styles.quoteGradient}`}>
           <div className="text-[10px] tracking-widest uppercase font-bold text-amber-200/90 mb-1">
             FAIDAH KAJIAN
           </div>
-          <p className="text-xs text-emerald-300 font-semibold mb-3 truncate">
+          <p className={`text-xs font-semibold mb-3 truncate ${styles.quoteAccentText}`}>
             {note.speaker || "QK Notes"} · {note.title}
           </p>
 
@@ -251,7 +256,7 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
             &ldquo;{quoteText}&rdquo;
           </p>
 
-          <div className="pt-2 border-t border-white/10 text-[9px] text-emerald-200/70 flex items-center justify-between">
+          <div className="pt-2 border-t border-white/10 text-[9px] text-white/75 flex items-center justify-between">
             <span>🤲 QK Notes</span>
             <span>{note.date || "Kajian"}</span>
           </div>
@@ -259,14 +264,14 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
 
         {/* Edit Quote Content */}
         <div className="space-y-2 mt-4">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold opacity-85">
             Kutipan yang Dibagikan:
           </label>
           <textarea
             rows={3}
             value={quoteText}
             onChange={(e) => setQuoteText(e.target.value)}
-            className="w-full p-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed"
+            className={`w-full p-2.5 rounded-xl border text-xs focus:outline-none focus:ring-2 leading-relaxed ${styles.inputBg} ${styles.ringFocus}`}
           />
         </div>
 
@@ -277,16 +282,16 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
         <div className="grid grid-cols-2 gap-2.5 mt-5">
           <button
             onClick={handleShareNative}
-            className="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+            className="py-2.5 px-3 rounded-xl border border-black/10 hover:bg-black/5 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
           >
             {copied ? (
               <>
-                <Check className="w-4 h-4 text-emerald-600" />
+                <Check className={`w-4 h-4 ${styles.accentIcon}`} />
                 <span>Teks Disalin!</span>
               </>
             ) : (
               <>
-                <Share2 className="w-4 h-4 text-slate-500" />
+                <Share2 className="w-4 h-4 opacity-70" />
                 <span>Bagikan Teks</span>
               </>
             )}
@@ -295,7 +300,7 @@ export const ShareQuoteModal: React.FC<ShareQuoteModalProps> = ({
           <button
             onClick={handleDownloadImage}
             disabled={downloading}
-            className="py-2.5 px-3 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95 disabled:opacity-50"
+            className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95 disabled:opacity-50 ${styles.primaryBtn}`}
           >
             <Download className="w-4 h-4" />
             <span>{downloading ? "Membuat..." : "Unduh Gambar"}</span>

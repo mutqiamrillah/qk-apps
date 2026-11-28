@@ -450,6 +450,7 @@ export default function HomePage() {
                 <StudyStreakCard
                   days={user.streak_days}
                   totalNotes={notes.length}
+                  theme={theme}
                 />
                 <RecentNotes
                   notes={notes}
@@ -555,6 +556,7 @@ export default function HomePage() {
         isOpen={isEditorOpen}
         noteToEdit={noteToEdit}
         categories={categories}
+        theme={theme}
         onClose={() => setIsEditorOpen(false)}
         onSave={handleSaveNote}
       />
@@ -562,6 +564,7 @@ export default function HomePage() {
       <SearchModal
         isOpen={isSearchOpen}
         notes={notes}
+        theme={theme}
         onClose={() => setIsSearchOpen(false)}
         onSelectNote={handleSelectNote}
       />
@@ -569,6 +572,7 @@ export default function HomePage() {
       <ShareQuoteModal
         isOpen={isShareOpen}
         note={shareNote || activeNote}
+        theme={theme}
         onClose={() => {
           setIsShareOpen(false);
           setShareNote(null);

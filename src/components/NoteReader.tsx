@@ -18,6 +18,7 @@ import {
   Heart,
 } from "lucide-react";
 import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats, sanitizeSafeUrl } from "@/lib/types";
+import { THEME_STYLES } from "@/lib/theme";
 
 interface NoteReaderProps {
   note: NoteItem;
@@ -45,6 +46,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [fontSizeLevel, setFontSizeLevel] = useState<"normal" | "large" | "xl">("normal");
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false);
   const [readingTheme, setReadingTheme] = useState<AppTheme>(theme);
+  const styles = THEME_STYLES[readingTheme];
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
@@ -403,7 +405,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
               return (
                 <div key={lIdx} className={`flex items-start gap-2.5 ml-2 leading-relaxed ${regularTextSizeClass}`}>
-                  <span className="text-emerald-500 font-bold select-none shrink-0">•</span>
+                  <span className={`font-bold select-none shrink-0 ${styles.accentIcon}`}>•</span>
                   <span>{renderInline(trimmed.replace(/^[-•]\s*/, ""))}</span>
                 </div>
               );
@@ -416,7 +418,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               const textContent = trimmed.replace(/^\d+\.\s/, "");
               return (
                 <div key={lIdx} className={`flex items-start gap-2 ml-2 leading-relaxed ${regularTextSizeClass}`}>
-                  <span className="font-semibold text-emerald-500 select-none min-w-[1.2rem] shrink-0">{numPrefix}</span>
+                  <span className={`font-semibold select-none min-w-[1.2rem] shrink-0 ${styles.accentIcon}`}>{numPrefix}</span>
                   <span>{renderInline(textContent)}</span>
                 </div>
               );
@@ -481,8 +483,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             onClick={handleCopyWhatsApp}
             className={`h-9 px-2.5 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition active:scale-95 ${
               copiedWa
-                ? "bg-emerald-600 text-white"
-                : "bg-black/5 hover:bg-black/10 text-slate-700"
+                ? styles.primaryBtn
+                : "bg-black/5 hover:bg-black/10"
             }`}
             title="Salin Rapi untuk WhatsApp / Telegram"
           >
@@ -533,7 +535,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           {onOpenShare && (
             <button
               onClick={() => onOpenShare(note)}
-              className="w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 text-emerald-600 flex items-center justify-center transition"
+              className={`w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 flex items-center justify-center transition ${styles.accentIcon}`}
               title="Bagikan Faidah ke Gambar / Story"
             >
               <Sparkles className="w-4 h-4" />
@@ -543,7 +545,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           {/* Edit Button */}
           <button
             onClick={() => onEdit(note)}
-            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 text-slate-700 flex items-center justify-center transition"
+            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 flex items-center justify-center transition"
             title="Edit Catatan"
           >
             <Edit3 className="w-4 h-4" />
@@ -552,7 +554,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           {/* Delete Button */}
           <button
             onClick={() => setConfirmDelete(true)}
-            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center transition"
+            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-rose-500/15 hover:text-rose-600 flex items-center justify-center transition"
             title="Hapus Catatan"
           >
             <Trash2 className="w-4 h-4" />
@@ -580,7 +582,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             {note.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs font-semibold text-emerald-600 hover:underline cursor-pointer"
+                className={`text-xs font-semibold hover:underline cursor-pointer ${styles.accentText}`}
               >
                 #{tag}
               </span>
@@ -592,11 +594,11 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-xs opacity-70 font-mono">
           {formatFullDateTime(note.date, note.created_at) && (
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <Clock className={`w-3.5 h-3.5 shrink-0 ${styles.accentIcon}`} />
               <span>{formatFullDateTime(note.date, note.created_at)}</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold">
+          <div className={`flex items-center gap-1.5 font-semibold ${styles.accentText}`}>
             <span>⏱️ {readingStats.minutes} mnt baca</span>
             <span>·</span>
             <span>{readingStats.words} kata</span>
@@ -648,11 +650,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           </button>
 
           {showFontSizeMenu && (
-            <div className={`absolute bottom-12 -left-6 rounded-2xl shadow-xl border p-2 min-w-[140px] flex flex-col gap-1 z-40 ${
-              readingTheme === "dark"
-                ? "bg-[#0e342c] border-[#1d5247] text-white"
-                : "bg-white border-slate-200 text-slate-800"
-            }`}>
+            <div className={`absolute bottom-12 -left-6 rounded-2xl shadow-xl border p-2 min-w-[140px] flex flex-col gap-1 z-40 ${styles.modalBg}`}>
               <button
                 onClick={() => {
                   setFontSizeLevel("normal");
@@ -661,7 +659,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span>Standar</span>
-                {fontSizeLevel === "normal" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {fontSizeLevel === "normal" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
               <button
                 onClick={() => {
@@ -671,7 +669,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span>Besar</span>
-                {fontSizeLevel === "large" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {fontSizeLevel === "large" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
               <button
                 onClick={() => {
@@ -681,7 +679,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span>Sangat Besar</span>
-                {fontSizeLevel === "xl" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {fontSizeLevel === "xl" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
             </div>
           )}
@@ -705,13 +703,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           </button>
 
           {showThemeMenu && (
-            <div className={`absolute bottom-12 -right-4 rounded-2xl shadow-xl border p-2 min-w-[140px] flex flex-col gap-1 z-40 ${
-              readingTheme === "dark"
-                ? "bg-[#0e342c] border-[#1d5247] text-white"
-                : readingTheme === "kyutsii"
-                ? "bg-[#fff5f8] border-[#fbcfe8] text-[#4a152b]"
-                : "bg-white border-slate-200 text-slate-800"
-            }`}>
+            <div className={`absolute bottom-12 -right-4 rounded-2xl shadow-xl border p-2 min-w-[140px] flex flex-col gap-1 z-40 ${styles.modalBg}`}>
               <button
                 onClick={() => {
                   changeTheme("light");
@@ -720,7 +712,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span className="flex items-center gap-2">☀️ <span>Terang</span></span>
-                {readingTheme === "light" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {readingTheme === "light" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
               <button
                 onClick={() => {
@@ -730,7 +722,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span className="flex items-center gap-2">📜 <span>Sepia</span></span>
-                {readingTheme === "sepia" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {readingTheme === "sepia" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
               <button
                 onClick={() => {
@@ -740,7 +732,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-black/5 rounded-lg text-left"
               >
                 <span className="flex items-center gap-2">🌙 <span>Malam</span></span>
-                {readingTheme === "dark" && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                {readingTheme === "dark" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
               <button
                 onClick={() => {
@@ -750,7 +742,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 className="flex items-center justify-between px-3 py-1.5 text-xs hover:bg-pink-100/70 rounded-lg text-left"
               >
                 <span className="flex items-center gap-2">🌸 <span>Kyutsii</span></span>
-                {readingTheme === "kyutsii" && <Check className="w-3.5 h-3.5 text-pink-600" />}
+                {readingTheme === "kyutsii" && <Check className={`w-3.5 h-3.5 ${styles.accentIcon}`} />}
               </button>
             </div>
           )}
@@ -760,18 +752,18 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       {/* Delete confirmation dialog */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl animate-in fade-in zoom-in-95 text-slate-900">
-            <h3 className="text-base font-bold text-slate-900 mb-2">
+          <div className={`rounded-3xl p-6 w-full max-w-sm shadow-xl border animate-in fade-in zoom-in-95 ${styles.modalBg}`}>
+            <h3 className="text-base font-bold mb-2">
               Hapus Catatan?
             </h3>
-            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+            <p className="text-xs opacity-75 mb-5 leading-relaxed">
               Catatan &quot;{note.title}&quot; akan dihapus secara permanen dari perangkat dan database.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                className="px-4 py-2 rounded-xl text-xs font-semibold opacity-75 hover:opacity-100 hover:bg-black/5 transition"
               >
                 Batal
               </button>

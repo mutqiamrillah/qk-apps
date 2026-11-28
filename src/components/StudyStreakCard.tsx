@@ -1,26 +1,32 @@
 "use client";
 
 import React from "react";
+import { AppTheme } from "@/lib/types";
+import { THEME_STYLES } from "@/lib/theme";
 
 interface StudyStreakCardProps {
   days: number;
   totalNotes: number;
+  theme?: AppTheme;
 }
 
 export const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
   days,
   totalNotes,
+  theme = "light",
 }) => {
+  const styles = THEME_STYLES[theme];
+
   return (
     <div className="mx-5 my-2">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#144f44] via-[#0f4339] to-[#0a3129] p-6 text-white shadow-lg shadow-emerald-900/10">
+      <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-lg transition-colors duration-200 ${styles.streakCard}`}>
         {/* Subtle decorative background glow */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none" />
+        <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl pointer-events-none ${styles.streakGlow}`} />
 
         <div className="flex items-center justify-between">
           <div className="space-y-3">
             {/* Streak Pill Badge */}
-            <div className="inline-block bg-white text-emerald-950 font-semibold text-xs px-3.5 py-1.5 rounded-full shadow-sm">
+            <div className={`inline-block font-semibold text-xs px-3.5 py-1.5 rounded-full shadow-sm ${styles.streakPill}`}>
               Study Streak
             </div>
 
@@ -30,11 +36,11 @@ export const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
                 <span className="text-4xl font-extrabold tracking-tight">
                   {days}
                 </span>
-                <span className="text-xl font-medium text-emerald-100">
+                <span className={`text-xl font-medium ${styles.streakSub}`}>
                   Days
                 </span>
               </div>
-              <p className="text-xs text-emerald-200/80 mt-1 font-medium">
+              <p className={`text-xs mt-1 font-medium ${styles.streakMuted}`}>
                 {totalNotes} notes recorded
               </p>
             </div>
@@ -42,7 +48,7 @@ export const StudyStreakCard: React.FC<StudyStreakCardProps> = ({
 
           {/* Fire Avatar Circle */}
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-emerald-600/30 border border-emerald-400/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+            <div className={`w-20 h-20 rounded-full border backdrop-blur-sm flex items-center justify-center shadow-inner ${styles.streakCircle}`}>
               <span className="text-4xl animate-pulse select-none">🔥</span>
             </div>
           </div>

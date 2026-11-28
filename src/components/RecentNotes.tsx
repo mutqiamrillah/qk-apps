@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
-import { LogIn, Pin, Clock, User, Tag, Star } from "lucide-react";
+import { THEME_STYLES } from "@/lib/theme";
+import { LogIn, Pin, Clock, Star } from "lucide-react";
 
 interface RecentNotesProps {
   notes: NoteItem[];
@@ -84,6 +85,8 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
     kyutsii: "bg-[#ffe4ee]/60 border-[#f9b8d0] text-[#831843]",
   }[theme];
 
+  const styles = THEME_STYLES[theme];
+
   return (
     <section className="px-5 mt-5 pb-24">
       {/* Section Header */}
@@ -92,7 +95,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
         {onSeeAllClick && notes.length > 0 && (
           <button
             onClick={onSeeAllClick}
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition"
+            className={`text-xs font-semibold transition ${styles.accentTextHover}`}
           >
             See all
           </button>
@@ -147,12 +150,8 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
               onClick={() => setStatusFilter(statusFilter === "draft" ? "all" : "draft")}
               className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1 transition active:scale-95 shrink-0 ${
                 statusFilter === "draft"
-                  ? "bg-teal-700 text-white shadow-sm font-bold"
-                  : theme === "dark"
-                  ? "bg-[#0f342d] text-teal-300 border border-[#1d5247]"
-                  : theme === "sepia"
-                  ? "bg-[#f3ebd9] text-teal-800 border border-[#e2d5bd]"
-                  : "bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100"
+                  ? `${styles.primaryBtn} shadow-sm font-bold`
+                  : `${styles.badgeAltBg} border`
               }`}
             >
               <span>📝</span>
@@ -256,7 +255,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                 {onLoginClick && (
                   <button
                     onClick={onLoginClick}
-                    className="mt-4 px-4 py-2 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                    className={`mt-4 px-4 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition active:scale-95 ${styles.primaryBtn}`}
                   >
                     <LogIn className="w-3.5 h-3.5" />
                     <span>Masuk / Daftar Akun</span>
@@ -330,7 +329,7 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                   {/* Timestamp with seconds precision */}
                   {formattedDate && (
                     <div className="flex items-center gap-1 text-[11px] opacity-65 mt-1 font-mono">
-                      <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <Clock className={`w-3 h-3 shrink-0 ${styles.accentIcon}`} />
                       <span className="truncate">{formattedDate}</span>
                     </div>
                   )}
@@ -341,14 +340,14 @@ export const RecentNotes: React.FC<RecentNotesProps> = ({
                         📌 Disematkan
                       </span>
                     )}
-                    <span className="inline-block bg-teal-50 text-teal-700 border border-teal-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    <span className={`inline-block border text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles.badgeAltBg}`}>
                       {note.status === "Online" ? "Posted" : note.status || "Posted"}
                     </span>
-                    <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200/50 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    <span className={`inline-block border text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles.badgeBg}`}>
                       ⏱️ {readingStats.minutes} mnt
                     </span>
                     {note.tags && note.tags.length > 0 && (
-                      <span className="text-[10px] text-emerald-600 font-medium truncate">
+                      <span className={`text-[10px] font-medium truncate ${styles.accentText}`}>
                         #{note.tags[0]}
                       </span>
                     )}

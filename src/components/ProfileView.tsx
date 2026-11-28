@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { UserProfile, NoteItem, AppTheme } from "@/lib/types";
+import { THEME_STYLES } from "@/lib/theme";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 interface ProfileViewProps {
@@ -319,6 +320,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     reader.readAsText(file);
   };
 
+  const styles = THEME_STYLES[theme];
+
   const titleTextClasses = {
     light: "text-slate-900",
     sepia: "text-[#423120]",
@@ -338,13 +341,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <h1 className={`text-2xl font-bold mb-4 ${titleTextClasses}`}>Profile</h1>
 
       {isPasswordRecovery ? (
-        <div className="rounded-3xl p-6 border bg-white border-emerald-200 shadow-sm text-slate-900 mb-5">
+        <div className={`rounded-3xl p-6 border shadow-sm mb-5 ${styles.modalBg}`}>
           <div className="text-center mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-2xl mx-auto mb-2">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-2 ${styles.pillBadge}`}>
               🔑
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Set New Password</h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <h2 className="text-lg font-bold">Set New Password</h2>
+            <p className="text-xs opacity-70 mt-1">
               Enter a new password for your QK Notes account.
             </p>
           </div>
@@ -357,7 +360,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
 
           {recoverySuccess && (
-            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+            <div className={`mb-4 p-3 rounded-xl border text-xs flex items-center gap-2 ${styles.badgeBg}`}>
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{recoverySuccess}</span>
             </div>
@@ -365,7 +368,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           <form onSubmit={handlePasswordUpdate} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold mb-1">
                 New Password
               </label>
               <div className="relative">
@@ -377,13 +380,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="At least 6 characters"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold mb-1">
                 Confirm New Password
               </label>
               <div className="relative">
@@ -395,7 +398,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
                 />
               </div>
             </div>
@@ -404,14 +407,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <button
                 type="button"
                 onClick={() => onPasswordRecoveryComplete?.()}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition"
+                className="px-4 py-2.5 rounded-xl border border-black/10 opacity-80 hover:bg-black/5 text-xs font-semibold transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={recoveryLoading}
-                className="flex-1 py-2.5 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold transition shadow-md disabled:opacity-50"
+                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition shadow-md disabled:opacity-50 ${styles.primaryBtn}`}
               >
                 {recoveryLoading ? "Updating..." : "Update Password"}
               </button>
@@ -423,7 +426,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className={`rounded-3xl p-6 border ${cardBaseClasses}`}>
           {/* Header Card */}
           <div className="text-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner ${styles.pillBadge}`}>
               🤲
             </div>
             <h2 className="text-lg font-bold">
@@ -481,7 +484,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
 
           {authSuccess && (
-            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+            <div className={`mb-4 p-3 rounded-xl border text-xs flex items-center gap-2 ${styles.badgeBg}`}>
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{authSuccess}</span>
             </div>
@@ -502,7 +505,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. QK"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
                   />
                 </div>
               </div>
@@ -520,7 +523,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
                 />
               </div>
             </div>
@@ -539,7 +542,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         setAuthError("");
                         setAuthSuccess("");
                       }}
-                      className="text-[11px] font-semibold text-emerald-600 hover:underline"
+                      className={`text-[11px] font-semibold hover:underline ${styles.accentText}`}
                     >
                       Forgot password?
                     </button>
@@ -554,7 +557,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
                   />
                 </div>
               </div>
@@ -563,7 +566,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full py-3 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold transition shadow-md disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
+              className={`w-full py-3 rounded-xl text-xs font-bold transition shadow-md disabled:opacity-50 mt-2 flex items-center justify-center gap-2 ${styles.primaryBtn}`}
             >
               {authLoading ? (
                 <span>Processing...</span>
@@ -584,7 +587,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   setAuthError("");
                   setAuthSuccess("");
                 }}
-                className="w-full py-2 text-xs font-semibold text-emerald-600 hover:underline"
+                className={`w-full py-2 text-xs font-semibold hover:underline ${styles.accentText}`}
               >
                 Back to Sign In
               </button>
@@ -611,11 +614,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="w-20 h-20 rounded-full bg-[#134e43] text-amber-300 flex items-center justify-center text-4xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer relative group"
+                className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer relative group ${
+                  theme === "kyutsii"
+                    ? "bg-[#ec4899] text-pink-50"
+                    : theme === "sepia"
+                    ? "bg-[#8c5a2b] text-amber-100"
+                    : "bg-[#134e43] text-amber-300"
+                }`}
                 title="Click to choose avatar"
               >
                 <span>{user.avatar || "🤲"}</span>
-                <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white text-slate-700 shadow-sm border border-slate-200 flex items-center justify-center text-xs group-hover:bg-emerald-50">
+                <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white text-slate-700 shadow-sm border border-slate-200 flex items-center justify-center text-xs">
                   ✏️
                 </span>
               </button>
@@ -642,10 +651,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       key={emoji}
                       type="button"
                       onClick={() => handleSelectAvatar(emoji)}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-2xl transition hover:bg-emerald-50 hover:scale-110 active:scale-95 ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-2xl transition hover:scale-110 active:scale-95 ${
                         (user.avatar || "🤲") === emoji
-                          ? "bg-emerald-100 ring-2 ring-emerald-600"
-                          : "bg-slate-50"
+                          ? `${styles.pillBadge} ring-2 ${theme === "kyutsii" ? "ring-pink-500" : theme === "sepia" ? "ring-[#8c5a2b]" : "ring-emerald-600"}`
+                          : "bg-slate-50 hover:bg-slate-100"
                       }`}
                     >
                       {emoji}
@@ -657,7 +666,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
             <h2 className="text-xl font-bold">{user.name}</h2>
             <p className="text-xs opacity-70 mb-1">{user.email}</p>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mt-2">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold mt-2 ${styles.pillBadge}`}>
               <Sparkles className="w-3 h-3" />
               <span>Synced & Saved</span>
             </div>
@@ -702,7 +711,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {/* Display Name Edit Card */}
           <div className={`rounded-3xl p-5 border ${cardBaseClasses}`}>
-            <h3 className="text-xs font-bold text-slate-700 mb-2">
+            <h3 className="text-xs font-bold opacity-80 mb-2">
               Display Name
             </h3>
             <form onSubmit={handleSaveName} className="flex gap-2">
@@ -710,18 +719,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                className={`flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 ${styles.ringFocus}`}
               />
               <button
                 type="submit"
                 disabled={nameSaving}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition"
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${styles.primaryBtn}`}
               >
                 {nameSaving ? "..." : "Save"}
               </button>
             </form>
             {nameSaveSuccess && (
-              <p className="text-[11px] text-emerald-600 mt-2 flex items-center gap-1">
+              <p className={`text-[11px] mt-2 flex items-center gap-1 ${styles.accentText}`}>
                 <CheckCircle2 className="w-3.5 h-3.5" /> Name updated successfully!
               </p>
             )}
@@ -754,9 +763,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95"
+              className={`w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 ${styles.hoverRow}`}
             >
-              <Upload className="w-4 h-4 text-emerald-600" />
+              <Upload className={`w-4 h-4 ${styles.accentIcon}`} />
               <span>Import Notes (Restore JSON)</span>
             </button>
 

@@ -59,6 +59,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           className={`fixed bottom-20 right-6 z-40 w-14 h-14 rounded-full text-white flex items-center justify-center text-3xl shadow-xl hover:scale-105 active:scale-95 transition-all ${
             theme === "kyutsii"
               ? "bg-[#ec4899] shadow-pink-500/25"
+              : theme === "sepia"
+              ? "bg-[#8c5a2b] shadow-amber-900/25"
               : "bg-[#134e43] shadow-emerald-950/20"
           }`}
           title="Buat Catatan Baru"
