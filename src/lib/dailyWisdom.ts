@@ -106,22 +106,25 @@ export const dailyWisdomList: DailyWisdom[] = [
   },
 ];
 
+const hadithWisdomList = dailyWisdomList.filter((item) => item.sourceType === "Hadith");
+
 /**
- * Mendapatkan nasihat harian secara acak dari daftar kurasi lokal (instant & fallback offline).
+ * Mendapatkan nasihat hadits harian secara acak dari daftar kurasi lokal (instant & fallback offline).
  * Jika seedDateStr diberikan (format YYYY-MM-DD), pilihan akan deterministik harian (berganti setiap hari),
  * sekaligus mendukung random murni saat diminta.
  */
 export function getRandomDailyWisdom(seedDateStr?: string): DailyWisdom {
+  const pool = hadithWisdomList.length > 0 ? hadithWisdomList : dailyWisdomList;
   if (seedDateStr) {
     let hash = 0;
     for (let i = 0; i < seedDateStr.length; i++) {
       hash = (hash * 31 + seedDateStr.charCodeAt(i)) & 0xffffffff;
     }
-    const idx = Math.abs(hash) % dailyWisdomList.length;
-    return dailyWisdomList[idx];
+    const idx = Math.abs(hash) % pool.length;
+    return pool[idx];
   }
-  const idx = Math.floor(Math.random() * dailyWisdomList.length);
-  return dailyWisdomList[idx];
+  const idx = Math.floor(Math.random() * pool.length);
+  return pool[idx];
 }
 
 const DAILY_WISDOM_CACHE_PREFIX = "qk_daily_wisdom_cache_";
@@ -154,46 +157,6 @@ async function fetchJsonWithTimeout(url: string): Promise<any> {
   } finally {
     clearTimeout(timer);
   }
-}
-
-async function fetchFromEQuran(seedDateStr?: string): Promise<DailyWisdom | null> {
-  const surahNo = seedDateStr
-    ? seededNumber(`${seedDateStr}-surah`, 114) + 1
-    : Math.floor(Math.random() * 114) + 1;
-
-  const json = await fetchJsonWithTimeout(`https://equran.id/api/v2/surat/${surahNo}`);
-  const data = json?.data;
-  const ayatList: any[] = Array.isArray(data?.ayat) ? data.ayat : [];
-  if (ayatList.length === 0) return null;
-
-  const conciseAyat = ayatList.filter(
-    (a) =>
-      typeof a?.teksArab === "string" &&
-      typeof a?.teksIndonesia === "string" &&
-      a.teksIndonesia.trim().length >= 25 &&
-      a.teksIndonesia.trim().length <= 360
-  );
-  const pool = conciseAyat.length > 0 ? conciseAyat : ayatList;
-  const pickIdx = seedDateStr
-    ? seededNumber(`${seedDateStr}-ayat`, pool.length)
-    : Math.floor(Math.random() * pool.length);
-  const picked = pool[pickIdx];
-
-  if (typeof picked?.teksArab !== "string" || typeof picked?.teksIndonesia !== "string") {
-    return null;
-  }
-
-  const surahName = typeof data?.namaLatin === "string" ? data.namaLatin : `Surah ${surahNo}`;
-  const surahMeaning = typeof data?.arti === "string" ? data.arti : "";
-
-  return {
-    id: `equran-${surahNo}-${picked.nomorAyat ?? pickIdx + 1}`,
-    sourceType: "Quran",
-    sourceRef: `QS. ${surahName}: ${picked.nomorAyat ?? pickIdx + 1}`,
-    theme: surahMeaning ? `${surahName} (${surahMeaning})` : "Ayat Al-Qur'an",
-    arabic: picked.teksArab.trim(),
-    translation: picked.teksIndonesia.trim(),
-  };
 }
 
 async function fetchFromHadithApi(seedDateStr?: string): Promise<DailyWisdom | null> {
@@ -245,8 +208,8 @@ function isValidWisdom(item: any): item is DailyWisdom {
 }
 
 /**
- * Mengambil kutipan Al-Qur'an (EQuran.id) atau Hadits (Gading Hadith API) secara live,
- * dengan cache harian di localStorage dan fallback otomatis ke daftar kurasi lokal jika offline.
+ * Mengambil kutipan Hadits (Gading Hadith API) secara live,
+ * dengan cache harian di localStorage dan fallback otomatis ke daftar hadits kurasi lokal jika offline.
  */
 export async function fetchDailyWisdom(seedDateStr?: string): Promise<DailyWisdom> {
   if (seedDateStr && typeof window !== "undefined") {
@@ -254,7 +217,7 @@ export async function fetchDailyWisdom(seedDateStr?: string): Promise<DailyWisdo
     if (cachedRaw) {
       try {
         const parsed = JSON.parse(cachedRaw);
-        if (isValidWisdom(parsed)) {
+        if (isValidWisdom(parsed) && parsed.sourceType === "Hadith") {
           return parsed;
         }
       } catch {
@@ -263,18 +226,10 @@ export async function fetchDailyWisdom(seedDateStr?: string): Promise<DailyWisdo
     }
   }
 
-  const preferQuran = seedDateStr
-    ? seededNumber(`${seedDateStr}-type`, 2) === 0
-    : Math.random() < 0.5;
-
-  const providers = preferQuran
-    ? [fetchFromEQuran, fetchFromHadithApi]
-    : [fetchFromHadithApi, fetchFromEQuran];
-
-  for (const provider of providers) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await provider(seedDateStr);
-      if (isValidWisdom(result)) {
+      const result = await fetchFromHadithApi(attempt === 0 ? seedDateStr : undefined);
+      if (isValidWisdom(result) && result.sourceType === "Hadith") {
         if (seedDateStr && typeof window !== "undefined") {
           localStorage.setItem(
             `${DAILY_WISDOM_CACHE_PREFIX}${seedDateStr}`,
@@ -284,7 +239,7 @@ export async function fetchDailyWisdom(seedDateStr?: string): Promise<DailyWisdo
         return result;
       }
     } catch {
-      // Fallback to next provider or local curated wisdom
+      // Retry once or fallback to local curated hadith
     }
   }
 
