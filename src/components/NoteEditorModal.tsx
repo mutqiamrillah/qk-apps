@@ -221,9 +221,9 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const handleInsertSnippet = (type: "arabic" | "translation") => {
     let snippet = "";
     if (type === "arabic") {
-      snippet = "\n\n:::arabic\nبِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n:::\n";
+      snippet = "\n:::arabic\nبِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n:::\n";
     } else if (type === "translation") {
-      snippet = '\n\n*Artinya: “Tuliskan terjemahan atau kutipan di sini...”*\n';
+      snippet = '\n*Artinya: “Tuliskan terjemahan atau kutipan di sini...”*\n';
     }
     setContent((prev) => prev + snippet);
   };

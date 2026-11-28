@@ -13,6 +13,15 @@ import { ProfileView } from "@/components/ProfileView";
 import { ShareQuoteModal } from "@/components/ShareQuoteModal";
 import { DailyWisdomModal } from "@/components/DailyWisdomModal";
 import { storageService, calculateStreakOnNewNote, calculateStreakFromNotes, toLocalDateString } from "@/lib/storage";
+import {
+  supabase,
+  isSupabaseConfigured,
+  isPasswordRecoveryPending,
+  subscribePasswordRecovery,
+  clearPasswordRecoveryFlag,
+  getInitialAuthError,
+  clearInitialAuthError,
+} from "@/lib/supabase";
 import { CategoryItem, NoteItem, UserProfile, AppTheme } from "@/lib/types";
 import { initialCategories, initialNotes, initialUser } from "@/lib/initialData";
 import { DailyWisdom, getRandomDailyWisdom } from "@/lib/dailyWisdom";
@@ -56,6 +65,7 @@ export default function HomePage() {
   const [dailyWisdom, setDailyWisdom] = useState<DailyWisdom | null>(null);
   const [isDailyWisdomOpen, setIsDailyWisdomOpen] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [initialAuthError, setInitialAuthError] = useState<string | null>(null);
 
   // Munculkan nasihat secara otomatis ketika pertama kali membuka aplikasi di hari tersebut
   useEffect(() => {
@@ -66,8 +76,8 @@ export default function HomePage() {
       const wisdom = getRandomDailyWisdom(today);
       setDailyWisdom(wisdom);
 
-      // Hanya auto-popup jika belum pernah dibuka pada hari ini
-      if (lastSeen !== today) {
+      // Hanya auto-popup jika belum pernah dibuka pada hari ini dan tidak sedang reset password
+      if (lastSeen !== today && !isPasswordRecoveryPending()) {
         setIsDailyWisdomOpen(true);
       }
     }
@@ -120,6 +130,23 @@ export default function HomePage() {
 
   // Load initial data from storage & sync on auth state change
   useEffect(() => {
+    const authUrlError = getInitialAuthError();
+    if (authUrlError) {
+      setInitialAuthError(authUrlError);
+      setIsDailyWisdomOpen(false);
+      setActiveTab("profile");
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+
+    const unsubscribeRecovery = subscribePasswordRecovery(() => {
+      setIsPasswordRecovery(true);
+      setIsDailyWisdomOpen(false);
+      setActiveNote(null);
+      setActiveTab("profile");
+    });
+
     async function loadData() {
       try {
         const [loadedUser, loadedNotes, loadedCategories] = await Promise.all([
@@ -128,12 +155,18 @@ export default function HomePage() {
           storageService.getCategories(),
         ]);
 
-        // Rekonsiliasi streak dari catatan aktual agar bebas dari distorsi timezone UTC server
+        // Rekonsiliasi streak, last_note_date, dan notes_count dari catatan aktual
         if (loadedNotes && loadedNotes.length > 0) {
           const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(loadedNotes);
-          if (calculatedStreak > 0 && calculatedStreak !== loadedUser.streak_days) {
+          const needsSync =
+            calculatedStreak !== loadedUser.streak_days ||
+            (lastDate && lastDate !== loadedUser.last_note_date) ||
+            loadedNotes.length !== loadedUser.notes_count;
+
+          if (needsSync) {
             loadedUser.streak_days = calculatedStreak;
             if (lastDate) loadedUser.last_note_date = lastDate;
+            loadedUser.notes_count = loadedNotes.length;
             await storageService.saveUser(loadedUser);
           }
         }
@@ -148,46 +181,39 @@ export default function HomePage() {
     loadData();
 
     // Listen to real-time auth changes from Supabase
-    let isMounted = true;
-    let unsubscribeAuth: (() => void) | undefined;
-
-    if (typeof window !== "undefined") {
-      import("@/lib/supabase").then(({ supabase, isSupabaseConfigured }) => {
-        if (!isMounted || !isSupabaseConfigured || !supabase) return;
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            if (event === "PASSWORD_RECOVERY") {
-              setIsPasswordRecovery(true);
-              setActiveNote(null);
-              setActiveTab("profile");
-            }
-
-            if (session?.user) {
-              const refreshedUser = await storageService.getUser();
-              const refreshedNotes = await storageService.getNotes();
-              setUser(refreshedUser);
-              setNotes(refreshedNotes);
-            } else {
-              const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
-              setUser({
-                ...initialUser,
-                avatar: savedAvatar || initialUser.avatar || "🤲",
-              });
-              setNotes([]);
-            }
+    let subscription: { unsubscribe: () => void } | null = null;
+    if (typeof window !== "undefined" && isSupabaseConfigured && supabase) {
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (event === "PASSWORD_RECOVERY") {
+            setIsPasswordRecovery(true);
+            setIsDailyWisdomOpen(false);
+            setActiveNote(null);
+            setActiveTab("profile");
           }
-        );
 
-        unsubscribeAuth = () => {
-          authListener.subscription.unsubscribe();
-        };
-      });
+          if (session?.user) {
+            const refreshedUser = await storageService.getUser();
+            const refreshedNotes = await storageService.getNotes();
+            setUser(refreshedUser);
+            setNotes(refreshedNotes);
+          } else {
+            const savedAvatar =
+              typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
+            setUser({
+              ...initialUser,
+              avatar: savedAvatar || initialUser.avatar || "🤲",
+            });
+            setNotes([]);
+          }
+        }
+      );
+      subscription = authListener.subscription;
     }
 
     return () => {
-      isMounted = false;
-      unsubscribeAuth?.();
+      unsubscribeRecovery();
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -269,11 +295,11 @@ export default function HomePage() {
     const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(updatedNotes);
 
     let updatedUser = { ...user };
-    if (isNewNote) {
+    if (calculatedStreak > 0 || isNewNote) {
       if (calculatedStreak > 0) {
         updatedUser.streak_days = calculatedStreak;
         if (lastDate) updatedUser.last_note_date = lastDate;
-      } else {
+      } else if (isNewNote) {
         const { newStreak, newDate } = calculateStreakOnNewNote(
           user.streak_days,
           user.last_note_date
@@ -329,13 +355,22 @@ export default function HomePage() {
   };
 
   const handleUpdateUser = async (updatedUser: UserProfile) => {
-    setUser(updatedUser);
-    await storageService.saveUser(updatedUser);
     if (updatedUser.is_logged_in) {
       const userNotes = await storageService.getNotes();
+      const { streak: calculatedStreak, lastDate } = calculateStreakFromNotes(userNotes);
+      const syncedUser: UserProfile = {
+        ...updatedUser,
+        streak_days: calculatedStreak > 0 ? calculatedStreak : updatedUser.streak_days,
+        last_note_date: lastDate || updatedUser.last_note_date,
+        notes_count: userNotes.length,
+      };
+      setUser(syncedUser);
       setNotes(userNotes);
+      await storageService.saveUser(syncedUser, { syncAuthMetadata: true });
     } else {
+      setUser(updatedUser);
       setNotes([]);
+      await storageService.saveUser(updatedUser);
     }
   };
 
@@ -459,7 +494,15 @@ export default function HomePage() {
                 notes={notes}
                 theme={theme}
                 isPasswordRecovery={isPasswordRecovery}
-                onPasswordRecoveryComplete={() => setIsPasswordRecovery(false)}
+                initialAuthError={initialAuthError}
+                onClearInitialAuthError={() => {
+                  setInitialAuthError(null);
+                  clearInitialAuthError();
+                }}
+                onPasswordRecoveryComplete={() => {
+                  setIsPasswordRecovery(false);
+                  clearPasswordRecoveryFlag();
+                }}
                 onUserChange={handleUpdateUser}
                 onLogout={handleLogout}
                 onImportNotes={handleImportNotes}

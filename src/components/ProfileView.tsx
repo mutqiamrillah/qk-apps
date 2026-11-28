@@ -21,6 +21,8 @@ interface ProfileViewProps {
   notes: NoteItem[];
   theme?: AppTheme;
   isPasswordRecovery?: boolean;
+  initialAuthError?: string | null;
+  onClearInitialAuthError?: () => void;
   onPasswordRecoveryComplete?: () => void;
   onUserChange: (user: UserProfile) => void;
   onLogout: () => void;
@@ -32,6 +34,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   notes,
   theme = "light",
   isPasswordRecovery = false,
+  initialAuthError = null,
+  onClearInitialAuthError,
   onPasswordRecoveryComplete,
   onUserChange,
   onLogout,
@@ -54,6 +58,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState("");
   const [recoverySuccess, setRecoverySuccess] = useState("");
+
+  React.useEffect(() => {
+    if (initialAuthError) {
+      setAuthError(initialAuthError);
+      onClearInitialAuthError?.();
+    }
+  }, [initialAuthError, onClearInitialAuthError]);
 
   // Edit Name & Avatar state
   const [editName, setEditName] = useState(user.name);
@@ -324,7 +335,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <div className="p-5 pb-28">
       <h1 className={`text-2xl font-bold mb-4 ${titleTextClasses}`}>Profile</h1>
 
-      {isPasswordRecovery && (
+      {isPasswordRecovery ? (
         <div className="rounded-3xl p-6 border bg-white border-emerald-200 shadow-sm text-slate-900 mb-5">
           <div className="text-center mb-5">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-2xl mx-auto mb-2">
@@ -405,9 +416,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           </form>
         </div>
-      )}
-
-      {!user.is_logged_in ? (
+      ) : !user.is_logged_in ? (
         /* --- TAMPILAN LOGIN / SIGNUP / FORGOT PASSWORD JIKA BELUM LOGIN --- */
         <div className={`rounded-3xl p-6 border ${cardBaseClasses}`}>
           {/* Header Card */}

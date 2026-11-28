@@ -14,9 +14,7 @@ import {
   BookOpen,
   Clock,
   Copy,
-  Printer,
   Star,
-  List,
 } from "lucide-react";
 import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats, sanitizeSafeUrl } from "@/lib/types";
 
@@ -49,41 +47,10 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [copiedWa, setCopiedWa] = useState(false);
-  const [showToc, setShowToc] = useState(false);
 
   // Kalkulasi statistik waktu baca & kata
   const readingStats = useMemo(() => {
     return calculateReadingStats(note.content || "");
-  }, [note.content]);
-
-  // Ekstrak heading untuk Table of Contents
-  const headings = useMemo(() => {
-    const lines = (note.content || "").split("\n");
-    const list: { id: string; text: string; level: number }[] = [];
-    let hIdx = 0;
-    lines.forEach((l) => {
-      const trimmed = l.trim();
-      if (trimmed.startsWith("# ")) {
-        list.push({
-          id: `heading-${hIdx++}`,
-          text: trimmed.replace("# ", "").replace(/[*_#=]/g, ""),
-          level: 1,
-        });
-      } else if (trimmed.startsWith("## ")) {
-        list.push({
-          id: `heading-${hIdx++}`,
-          text: trimmed.replace("## ", "").replace(/[*_#=]/g, ""),
-          level: 2,
-        });
-      } else if (trimmed.startsWith("### ")) {
-        list.push({
-          id: `heading-${hIdx++}`,
-          text: trimmed.replace("### ", "").replace(/[*_#=]/g, ""),
-          level: 3,
-        });
-      }
-    });
-    return list;
   }, [note.content]);
 
   React.useEffect(() => {
@@ -132,12 +99,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       } catch (err) {
         console.warn("Clipboard write failed:", err);
       }
-    }
-  };
-
-  const handlePrint = () => {
-    if (typeof window !== "undefined") {
-      window.print();
     }
   };
 
@@ -212,7 +173,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         return (
           <mark
             key={i}
-            className="px-1.5 py-0.5 rounded font-semibold bg-[#FF8DA1] text-[#3d0a15]"
+            className="px-1.5 py-0.5 rounded font-semibold bg-[#FFC5D3] text-[#3d0a15]"
           >
             {token.slice(2, -2)}
           </mark>
@@ -234,7 +195,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
   // Parse formatting rich blocks: Arabic, alignments, headings, quotes, bullets, numbered
   const renderFormattedContent = (content: string) => {
-    let headingCounter = 0;
     const regularTextSizeClass =
       fontSizeLevel === "normal"
         ? "text-sm"
@@ -251,7 +211,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         return (
           <div
             key={index}
-            className={`my-5 p-4 pl-4 border-l-4 rounded-r-2xl ${
+            className={`my-2 px-3 py-2 border-l-4 rounded-r-xl ${
               readingTheme === "dark"
                 ? "border-emerald-400 bg-emerald-950/40"
                 : "border-emerald-600 bg-emerald-50/30"
@@ -259,7 +219,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           >
             <div
               dir="rtl"
-              className={`font-arabic text-right leading-loose tracking-wide ${
+              className={`font-arabic text-right leading-relaxed tracking-wide ${
                 readingTheme === "dark" ? "text-amber-200" : "text-emerald-950"
               } ${
                 fontSizeLevel === "normal"
@@ -316,21 +276,22 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       }
 
       // 6. STANDARD LINES (Headings, Quote, Bullets, Paragraphs)
-      const lines = part.split("\n");
+      const trimmedPart = part.replace(/^\n+|\n+$/g, "");
+      if (!trimmedPart) return null;
+
+      const lines = trimmedPart.split("\n");
       return (
-        <div key={index} className="space-y-2.5 my-2">
+        <div key={index} className="space-y-1.5 my-1">
           {lines.map((line, lIdx) => {
             const trimmed = line.trim();
-            if (!trimmed) return <div key={lIdx} className="h-2" />;
+            if (!trimmed) return <div key={lIdx} className="h-1.5" />;
 
             // Title (# )
             if (trimmed.startsWith("# ")) {
-              const hId = `heading-${headingCounter++}`;
               return (
                 <h1
-                  id={hId}
                   key={lIdx}
-                  className={`font-black mt-6 mb-3 tracking-tight scroll-mt-20 ${
+                  className={`font-black mt-5 mb-2 tracking-tight ${
                     readingTheme === "dark" ? "text-white" : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
@@ -347,12 +308,10 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
             // Heading (## )
             if (trimmed.startsWith("## ")) {
-              const hId = `heading-${headingCounter++}`;
               return (
                 <h2
-                  id={hId}
                   key={lIdx}
-                  className={`font-bold mt-5 mb-2 scroll-mt-20 ${
+                  className={`font-bold mt-4 mb-1.5 ${
                     readingTheme === "dark" ? "text-emerald-200" : "text-slate-900"
                   } ${
                     fontSizeLevel === "normal"
@@ -369,12 +328,10 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
 
             // Subheading (### )
             if (trimmed.startsWith("### ")) {
-              const hId = `heading-${headingCounter++}`;
               return (
                 <h3
-                  id={hId}
                   key={lIdx}
-                  className={`font-bold mt-4 mb-1.5 scroll-mt-20 ${
+                  className={`font-bold mt-3.5 mb-1 ${
                     readingTheme === "dark" ? "text-emerald-300" : "text-slate-800"
                   } ${
                     fontSizeLevel === "normal"
@@ -469,7 +426,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
   return (
     <div className={`min-h-screen flex flex-col pb-24 transition-colors duration-200 ${themeClasses}`}>
       {/* Top Bar */}
-      <div className={`sticky top-0 z-20 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b no-print ${headerBarClasses}`}>
+      <div className={`sticky top-0 z-20 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b ${headerBarClasses}`}>
         <button
           onClick={onBack}
           className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition active:scale-95"
@@ -502,15 +459,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
             )}
           </button>
 
-          {/* Cetak / Ekspor PDF Button */}
-          <button
-            onClick={handlePrint}
-            className="w-9 h-9 rounded-xl bg-black/5 hover:bg-black/10 text-slate-700 flex items-center justify-center transition active:scale-95"
-            title="Cetak Catatan / Simpan ke PDF"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
-
           {/* Favorite Star Button */}
           {onToggleFavorite && (
             <button
@@ -523,21 +471,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
               title={note.is_favorite ? "Hapus dari Favorit" : "Simpan ke Catatan Favorit (⭐)"}
             >
               <Star className={`w-4 h-4 ${note.is_favorite ? "fill-amber-500 text-amber-500" : ""}`} />
-            </button>
-          )}
-
-          {/* Table of Contents Button (hanya jika ada heading) */}
-          {headings.length > 0 && (
-            <button
-              onClick={() => setShowToc(!showToc)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition active:scale-95 ${
-                showToc
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "bg-black/5 hover:bg-black/10 text-slate-700"
-              }`}
-              title="Daftar Isi (Table of Contents)"
-            >
-              <List className="w-4 h-4" />
             </button>
           )}
 
@@ -626,55 +559,6 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
           </div>
         </div>
 
-        {/* Table of Contents Box */}
-        {showToc && headings.length > 0 && (
-          <div
-            className={`my-4 p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2 ${
-              readingTheme === "dark"
-                ? "bg-[#0b2721] border-[#1a4e42]"
-                : readingTheme === "sepia"
-                ? "bg-[#f3ebd9] border-[#e2d5bd]"
-                : "bg-emerald-50/60 border-emerald-200/70"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-black/5 dark:border-white/5">
-              <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
-                <span>📑</span> Daftar Isi ({headings.length})
-              </span>
-              <button
-                onClick={() => setShowToc(false)}
-                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white"
-              >
-                Tutup ✕
-              </button>
-            </div>
-            <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-              {headings.map((h) => (
-                <button
-                  key={h.id}
-                  onClick={() => {
-                    const el = document.getElementById(h.id);
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth", block: "start" });
-                      setShowToc(false);
-                    }
-                  }}
-                  className={`w-full text-left text-xs py-1.5 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition truncate block ${
-                    h.level === 1
-                      ? "font-bold text-emerald-800 dark:text-emerald-200"
-                      : h.level === 2
-                      ? "pl-4 font-medium text-slate-800 dark:text-slate-200"
-                      : "pl-6 text-slate-600 dark:text-slate-400"
-                  }`}
-                >
-                  {h.level === 1 ? "• " : h.level === 2 ? "↳ " : "– "}
-                  {h.text}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Meta pill dropdown */}
         <div className="mt-4 mb-6">
           <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-medium ${pillClasses}`}>
@@ -690,7 +574,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
       </div>
 
       {/* Bottom Floating Tools */}
-      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border no-print ${
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border ${
         readingTheme === "dark"
           ? "bg-[#0e342c]/95 border-[#1d5247] text-white"
           : "bg-white/95 border-slate-200 text-slate-800"

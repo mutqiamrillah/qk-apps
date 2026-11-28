@@ -274,7 +274,10 @@ export const storageService = {
     return parsed;
   },
 
-  saveUser: async (user: UserProfile): Promise<void> => {
+  saveUser: async (
+    user: UserProfile,
+    options?: { syncAuthMetadata?: boolean }
+  ): Promise<void> => {
     if (typeof window === "undefined") return;
 
     // Selalu simpan ke localStorage secara instan & persisten
@@ -288,8 +291,8 @@ export const storageService = {
 
     if (isSupabaseConfigured && supabase && user.is_logged_in) {
       try {
-        // 1. Simpan avatar & name langsung ke Supabase Auth User Metadata (kebal schema database)
-        if (user.avatar || user.name) {
+        // 1. Sinkronkan metadata Auth hanya saat profil/avatar eksplisit diubah (hindari race USER_UPDATED saat simpan note)
+        if (options?.syncAuthMetadata && (user.avatar || user.name)) {
           await supabase.auth.updateUser({
             data: {
               ...(user.avatar ? { avatar: user.avatar } : {}),
@@ -310,15 +313,28 @@ export const storageService = {
           updated_at: new Date().toISOString(),
         };
 
-        const { error } = await supabase.from("profiles").upsert(payload);
+        const { error } = await supabase
+          .from("profiles")
+          .upsert(payload, { onConflict: "id" });
         if (error) {
+          console.warn("Supabase profiles upsert warning:", error.message, error.code);
+          let shouldRetry = false;
           if (error.message?.includes("avatar")) {
             delete payload.avatar;
+            shouldRetry = true;
           }
-          if (error.message?.includes("last_note_date") || error.code === "PGRST204") {
+          if (error.message?.includes("last_note_date")) {
             delete payload.last_note_date;
+            shouldRetry = true;
           }
-          await supabase.from("profiles").upsert(payload);
+          if (shouldRetry) {
+            const { error: retryError } = await supabase
+              .from("profiles")
+              .upsert(payload, { onConflict: "id" });
+            if (retryError) {
+              console.error("Supabase profiles retry upsert error:", retryError);
+            }
+          }
         }
       } catch (err) {
         console.warn("Supabase save user failed, storing locally:", err);
