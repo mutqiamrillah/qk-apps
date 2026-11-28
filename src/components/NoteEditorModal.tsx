@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Save, Sparkles } from "lucide-react";
-import { CategoryItem, NoteItem, formatFullDateTime } from "@/lib/types";
+import { X, Save, Sparkles, Link2 } from "lucide-react";
+import { CategoryItem, NoteItem, formatFullDateTime, sanitizeSafeUrl } from "@/lib/types";
 
 interface NoteEditorModalProps {
   isOpen: boolean;
@@ -26,6 +26,13 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
   const [tagsStr, setTagsStr] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"Online" | "Draft">("Online");
+
+  // Inline hyperlink insertion state
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkError, setLinkError] = useState("");
+  const [linkSelection, setLinkSelection] = useState<{ start: number; end: number } | null>(null);
 
   const [savedDraft, setSavedDraft] = useState<{
     title: string;
@@ -118,6 +125,11 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       setContent("");
       setStatus("Online");
     }
+    setShowLinkForm(false);
+    setLinkText("");
+    setLinkUrl("");
+    setLinkError("");
+    setLinkSelection(null);
   }, [noteToEdit, isOpen]);
 
   if (!isOpen) return null;
@@ -214,6 +226,53 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
       snippet = '\n\n*Artinya: “Tuliskan terjemahan atau kutipan di sini...”*\n';
     }
     setContent((prev) => prev + snippet);
+  };
+
+  const handleOpenLinkForm = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      setLinkSelection({ start, end });
+      setLinkText(content.substring(start, end));
+    } else {
+      setLinkSelection(null);
+      setLinkText("");
+    }
+    setLinkUrl("");
+    setLinkError("");
+    setShowLinkForm((prev) => !prev);
+  };
+
+  const handleInsertLink = () => {
+    const safeUrl = sanitizeSafeUrl(linkUrl);
+    if (!safeUrl) {
+      setLinkError("Masukkan URL yang valid (http:// atau https://).");
+      return;
+    }
+
+    const label = linkText.trim() || safeUrl;
+    const markdownLink = `[${label}](${safeUrl})`;
+
+    const start = linkSelection ? linkSelection.start : content.length;
+    const end = linkSelection ? linkSelection.end : content.length;
+    const newContent = content.substring(0, start) + markdownLink + content.substring(end);
+    setContent(newContent);
+
+    setShowLinkForm(false);
+    setLinkText("");
+    setLinkUrl("");
+    setLinkError("");
+    setLinkSelection(null);
+
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.focus();
+        const cursor = start + markdownLink.length;
+        textarea.setSelectionRange(cursor, cursor);
+      }
+    }, 10);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -436,10 +495,23 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => applyFormatting("Highlight")}
-                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 active:scale-95 transition shrink-0"
-                title="Format Highlight (==teks==)"
+                className="whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 active:scale-95 transition shrink-0"
+                title="Format Highlight Pink (==teks==)"
               >
                 Highlight
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenLinkForm}
+                className={`whitespace-nowrap px-2.5 py-1 text-xs font-semibold rounded-lg border active:scale-95 transition shrink-0 flex items-center gap-1 ${
+                  showLinkForm
+                    ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300"
+                }`}
+                title="Sisipkan Hyperlink ([teks](url))"
+              >
+                <Link2 className="w-3 h-3" />
+                <span>Link</span>
               </button>
               <button
                 type="button"
@@ -555,6 +627,64 @@ export const NoteEditorModal: React.FC<NoteEditorModalProps> = ({
                 ﷽
               </button>
             </div>
+
+            {showLinkForm && (
+              <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2 animate-in fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={linkText}
+                    onChange={(e) => setLinkText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleInsertLink();
+                      }
+                    }}
+                    placeholder="Teks link (opsional)"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                  <input
+                    type="text"
+                    value={linkUrl}
+                    onChange={(e) => {
+                      setLinkUrl(e.target.value);
+                      if (linkError) setLinkError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleInsertLink();
+                      }
+                    }}
+                    placeholder="https://contoh.com"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+                {linkError && (
+                  <p className="text-[11px] text-rose-600 font-medium">{linkError}</p>
+                )}
+                <div className="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLinkForm(false);
+                      setLinkError("");
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 hover:bg-slate-200/60 transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleInsertLink}
+                    className="px-3 py-1 rounded-lg bg-[#134e43] hover:bg-[#0e3b33] text-white text-[11px] font-bold transition"
+                  >
+                    Sisipkan Link
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Content Body */}

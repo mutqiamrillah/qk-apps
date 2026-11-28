@@ -1,5 +1,27 @@
 export type AppTheme = "light" | "sepia" | "dark";
 
+/**
+ * Validates and normalizes an external URL for safe hyperlink rendering.
+ * Only http: and https: protocols are allowed (blocks javascript:, data:, etc.).
+ */
+export function sanitizeSafeUrl(rawUrl: string): string | null {
+  const trimmed = rawUrl.trim();
+  if (!trimmed || trimmed.startsWith("//")) return null;
+
+  const hasScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
+  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function calculateReadingStats(content: string = ""): { words: number; minutes: number } {
   const clean = content
     .replace(/:::[^:]+:::/g, " ")

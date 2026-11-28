@@ -55,6 +55,7 @@ export default function HomePage() {
   // Daily Wisdom (Nasihat Al-Qur'an & Hadits harian)
   const [dailyWisdom, setDailyWisdom] = useState<DailyWisdom | null>(null);
   const [isDailyWisdomOpen, setIsDailyWisdomOpen] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // Munculkan nasihat secara otomatis ketika pertama kali membuka aplikasi di hari tersebut
   useEffect(() => {
@@ -147,32 +148,47 @@ export default function HomePage() {
     loadData();
 
     // Listen to real-time auth changes from Supabase
+    let isMounted = true;
+    let unsubscribeAuth: (() => void) | undefined;
+
     if (typeof window !== "undefined") {
       import("@/lib/supabase").then(({ supabase, isSupabaseConfigured }) => {
-        if (isSupabaseConfigured && supabase) {
-          const { data: authListener } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-              if (session?.user) {
-                const refreshedUser = await storageService.getUser();
-                const refreshedNotes = await storageService.getNotes();
-                setUser(refreshedUser);
-                setNotes(refreshedNotes);
-              } else {
-                const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
-                setUser({
-                  ...initialUser,
-                  avatar: savedAvatar || initialUser.avatar || "🤲",
-                });
-                setNotes([]);
-              }
+        if (!isMounted || !isSupabaseConfigured || !supabase) return;
+
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (event === "PASSWORD_RECOVERY") {
+              setIsPasswordRecovery(true);
+              setActiveNote(null);
+              setActiveTab("profile");
             }
-          );
-          return () => {
-            authListener.subscription.unsubscribe();
-          };
-        }
+
+            if (session?.user) {
+              const refreshedUser = await storageService.getUser();
+              const refreshedNotes = await storageService.getNotes();
+              setUser(refreshedUser);
+              setNotes(refreshedNotes);
+            } else {
+              const savedAvatar = typeof window !== "undefined" ? localStorage.getItem("qk_saved_avatar") : null;
+              setUser({
+                ...initialUser,
+                avatar: savedAvatar || initialUser.avatar || "🤲",
+              });
+              setNotes([]);
+            }
+          }
+        );
+
+        unsubscribeAuth = () => {
+          authListener.subscription.unsubscribe();
+        };
       });
     }
+
+    return () => {
+      isMounted = false;
+      unsubscribeAuth?.();
+    };
   }, []);
 
   // Handlers
@@ -442,6 +458,8 @@ export default function HomePage() {
                 user={user}
                 notes={notes}
                 theme={theme}
+                isPasswordRecovery={isPasswordRecovery}
+                onPasswordRecoveryComplete={() => setIsPasswordRecovery(false)}
                 onUserChange={handleUpdateUser}
                 onLogout={handleLogout}
                 onImportNotes={handleImportNotes}

@@ -20,6 +20,8 @@ interface ProfileViewProps {
   user: UserProfile;
   notes: NoteItem[];
   theme?: AppTheme;
+  isPasswordRecovery?: boolean;
+  onPasswordRecoveryComplete?: () => void;
   onUserChange: (user: UserProfile) => void;
   onLogout: () => void;
   onImportNotes?: (importedNotes: NoteItem[]) => void;
@@ -29,20 +31,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   notes,
   theme = "light",
+  isPasswordRecovery = false,
+  onPasswordRecoveryComplete,
   onUserChange,
   onLogout,
   onImportNotes,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importMessage, setImportMessage] = useState<string>("");
-  // Auth Tab: 'login' | 'signup'
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  // Auth Tab: 'login' | 'signup' | 'forgot'
+  const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
+
+  // Password recovery state (after clicking email reset link)
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoverySuccess, setRecoverySuccess] = useState("");
 
   // Edit Name & Avatar state
   const [editName, setEditName] = useState(user.name);
@@ -68,7 +79,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setShowEmojiPicker(false);
   };
 
-  // --- HANDLE AUTH (SIGNUP / LOGIN) ---
+  // --- HANDLE AUTH (SIGNUP / LOGIN / FORGOT PASSWORD) ---
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -79,6 +90,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     const cleanPassword = password.trim();
 
     try {
+      if (authMode === "forgot") {
+        if (!cleanEmail) {
+          throw new Error("Please enter your email address.");
+        }
+        if (isSupabaseConfigured && supabase) {
+          const redirectTo =
+            typeof window !== "undefined" ? window.location.origin : undefined;
+          const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo,
+          });
+          if (error) throw error;
+          setAuthSuccess(
+            "If an account exists for that email, a password reset link has been sent. Please check your inbox."
+          );
+        } else {
+          setAuthError(
+            "Password reset via email is only available when Supabase Cloud is connected."
+          );
+        }
+        return;
+      }
+
       if (isSupabaseConfigured && supabase) {
         if (authMode === "signup") {
           const { data, error } = await supabase.auth.signUp({
@@ -157,6 +190,51 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setAuthError(err.message || "Authentication failed. Please try again.");
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // --- HANDLE UPDATE PASSWORD (FROM RECOVERY LINK) ---
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError("");
+    setRecoverySuccess("");
+
+    const trimmedNew = newPassword.trim();
+    const trimmedConfirm = confirmPassword.trim();
+
+    if (trimmedNew.length < 6) {
+      setRecoveryError("Password must be at least 6 characters.");
+      return;
+    }
+    if (trimmedNew !== trimmedConfirm) {
+      setRecoveryError("Passwords do not match.");
+      return;
+    }
+    if (!isSupabaseConfigured || !supabase) {
+      setRecoveryError("Supabase is not configured.");
+      return;
+    }
+
+    setRecoveryLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: trimmedNew,
+      });
+      if (error) throw error;
+
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+      setNewPassword("");
+      setConfirmPassword("");
+      setRecoverySuccess("Password updated successfully! You can continue using your account.");
+      setTimeout(() => {
+        onPasswordRecoveryComplete?.();
+      }, 1500);
+    } catch (err: any) {
+      setRecoveryError(err.message || "Failed to update password. Please request a new reset link.");
+    } finally {
+      setRecoveryLoading(false);
     }
   };
 
@@ -246,53 +324,142 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <div className="p-5 pb-28">
       <h1 className={`text-2xl font-bold mb-4 ${titleTextClasses}`}>Profile</h1>
 
+      {isPasswordRecovery && (
+        <div className="rounded-3xl p-6 border bg-white border-emerald-200 shadow-sm text-slate-900 mb-5">
+          <div className="text-center mb-5">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-2xl mx-auto mb-2">
+              🔑
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">Set New Password</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Enter a new password for your QK Notes account.
+            </p>
+          </div>
+
+          {recoveryError && (
+            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{recoveryError}</span>
+            </div>
+          )}
+
+          {recoverySuccess && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{recoverySuccess}</span>
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordUpdate} className="space-y-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                New Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onPasswordRecoveryComplete?.()}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={recoveryLoading}
+                className="flex-1 py-2.5 rounded-xl bg-[#134e43] hover:bg-[#0e3b33] text-white text-xs font-bold transition shadow-md disabled:opacity-50"
+              >
+                {recoveryLoading ? "Updating..." : "Update Password"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {!user.is_logged_in ? (
-        /* --- TAMPILAN LOGIN / SIGNUP JIKA BELUM LOGIN --- */
+        /* --- TAMPILAN LOGIN / SIGNUP / FORGOT PASSWORD JIKA BELUM LOGIN --- */
         <div className={`rounded-3xl p-6 border ${cardBaseClasses}`}>
           {/* Header Card */}
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
               🤲
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
-              Account
+            <h2 className="text-lg font-bold">
+              {authMode === "forgot" ? "Reset Password" : "Account"}
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Sign in or create an account to keep your notes and streak safely synced.
+            <p className="text-xs opacity-70 mt-1">
+              {authMode === "forgot"
+                ? "Enter your account email and we will send a password reset link."
+                : "Sign in or create an account to keep your notes and streak safely synced."}
             </p>
           </div>
 
           {/* Tab Selector */}
-          <div className="flex bg-slate-100 p-1 rounded-2xl mb-5">
-            <button
-              onClick={() => {
-                setAuthMode("login");
-                setAuthError("");
-                setAuthSuccess("");
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-                authMode === "login"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => {
-                setAuthMode("signup");
-                setAuthError("");
-                setAuthSuccess("");
-              }}
-              className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
-                authMode === "signup"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
+          {authMode !== "forgot" && (
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthError("");
+                  setAuthSuccess("");
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                  authMode === "login"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("signup");
+                  setAuthError("");
+                  setAuthSuccess("");
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                  authMode === "signup"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
 
           {/* Feedback Messages */}
           {authError && (
@@ -313,7 +480,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <form onSubmit={handleAuthSubmit} className="space-y-3.5">
             {authMode === "signup" && (
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold mb-1">
                   Full Name
                 </label>
                 <div className="relative">
@@ -324,14 +491,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. QK"
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold mb-1">
                 Email
               </label>
               <div className="relative">
@@ -342,28 +509,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                />
+            {authMode !== "forgot" && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold">
+                    Password
+                  </label>
+                  {authMode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode("forgot");
+                        setAuthError("");
+                        setAuthSuccess("");
+                      }}
+                      className="text-[11px] font-semibold text-emerald-600 hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               type="submit"
@@ -374,10 +558,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <span>Processing...</span>
               ) : authMode === "signup" ? (
                 <span>Create Account</span>
+              ) : authMode === "forgot" ? (
+                <span>Send Reset Link</span>
               ) : (
                 <span>Sign In</span>
               )}
             </button>
+
+            {authMode === "forgot" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthError("");
+                  setAuthSuccess("");
+                }}
+                className="w-full py-2 text-xs font-semibold text-emerald-600 hover:underline"
+              >
+                Back to Sign In
+              </button>
+            )}
           </form>
 
           {/* Database indicator */}

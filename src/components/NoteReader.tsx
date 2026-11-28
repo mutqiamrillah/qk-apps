@@ -18,7 +18,7 @@ import {
   Star,
   List,
 } from "lucide-react";
-import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats } from "@/lib/types";
+import { NoteItem, AppTheme, formatFullDateTime, calculateReadingStats, sanitizeSafeUrl } from "@/lib/types";
 
 interface NoteReaderProps {
   note: NoteItem;
@@ -110,6 +110,8 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
     body = body.replace(/:::arabic\s*([\s\S]*?)\s*:::/g, "$1\n");
     // Clean alignments
     body = body.replace(/:::(?:center|right|justify|left)\s*([\s\S]*?)\s*:::/g, "$1");
+    // Clean Markdown links [label](url) -> label (url)
+    body = body.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
     // Markdown headers to bold
     body = body.replace(/^#+\s*(.*?)$/gm, "*$1*");
     // Markdown quotes
@@ -139,10 +141,63 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
     }
   };
 
-  // Helper untuk parsing inline markdown: **bold**, ==highlight==, *italic*
+  // Helper untuk parsing inline markdown: [link](url), bare https:// url, **bold**, ==highlight==, *italic*
   const renderInline = (text: string) => {
-    const tokens = text.split(/(\*\*.*?\*\*|==.*?==|\*.*?\*)/g);
+    const tokens = text.split(
+      /(\[[^\]]+\]\([^)\s]+\)|https?:\/\/[^\s<>()]+|\*\*.*?\*\*|==.*?==|\*.*?\*)/g
+    );
     return tokens.map((token, i) => {
+      const mdLinkMatch = token.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+      if (mdLinkMatch) {
+        const [, label, rawUrl] = mdLinkMatch;
+        const safeUrl = sanitizeSafeUrl(rawUrl);
+        if (safeUrl) {
+          return (
+            <a
+              key={i}
+              href={safeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`underline underline-offset-2 font-medium break-words transition ${
+                readingTheme === "dark"
+                  ? "text-emerald-300 decoration-emerald-400/70 hover:text-emerald-200"
+                  : "text-emerald-700 decoration-emerald-600/60 hover:text-emerald-900"
+              }`}
+            >
+              {label}
+            </a>
+          );
+        }
+        return label;
+      }
+
+      if (/^https?:\/\/[^\s<>()]+$/.test(token)) {
+        const trailingMatch = token.match(/^(.*?)([.,;:!?]+)$/);
+        const rawUrl = trailingMatch ? trailingMatch[1] : token;
+        const trailing = trailingMatch ? trailingMatch[2] : "";
+        const safeUrl = sanitizeSafeUrl(rawUrl);
+        if (safeUrl) {
+          return (
+            <React.Fragment key={i}>
+              <a
+                href={safeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`underline underline-offset-2 font-medium break-all transition ${
+                  readingTheme === "dark"
+                    ? "text-emerald-300 decoration-emerald-400/70 hover:text-emerald-200"
+                    : "text-emerald-700 decoration-emerald-600/60 hover:text-emerald-900"
+                }`}
+              >
+                {rawUrl}
+              </a>
+              {trailing}
+            </React.Fragment>
+          );
+        }
+        return token;
+      }
+
       if (token.startsWith("**") && token.endsWith("**") && token.length >= 4) {
         return (
           <strong
@@ -157,11 +212,7 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
         return (
           <mark
             key={i}
-            className={`px-1.5 py-0.5 rounded font-semibold ${
-              readingTheme === "dark"
-                ? "bg-emerald-800/80 text-amber-200"
-                : "bg-amber-200/90 text-amber-950"
-            }`}
+            className="px-1.5 py-0.5 rounded font-semibold bg-[#FF8DA1] text-[#3d0a15]"
           >
             {token.slice(2, -2)}
           </mark>
@@ -212,10 +263,10 @@ export const NoteReader: React.FC<NoteReaderProps> = ({
                 readingTheme === "dark" ? "text-amber-200" : "text-emerald-950"
               } ${
                 fontSizeLevel === "normal"
-                  ? "text-2xl"
+                  ? "text-lg"
                   : fontSizeLevel === "large"
-                  ? "text-3xl"
-                  : "text-4xl"
+                  ? "text-xl"
+                  : "text-2xl"
               }`}
             >
               {arabicText}
